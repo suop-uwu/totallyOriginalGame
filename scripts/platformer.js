@@ -12,6 +12,7 @@ $(function () {
     var temporaryValues = {
         debugOverlay: false
     };
+    var collisions = [];
 
     function resizeCanvas() {
         canvas.height = window.innerHeight;
@@ -21,6 +22,7 @@ $(function () {
         ctx.webkitImageSmoothingEnabled = false;
         ctx.msImageSmoothingEnabled = false;
         ctx.imageSmoothingEnabled = false;
+        ctx.translate(0, -blockSize);
     }
 
     function setCookie(cname, cvalue, exdays) {
@@ -53,14 +55,16 @@ $(function () {
         velx: 0,
         vely: 0,
         onGround: true,
-        accelx: 0.1,
+        accelx: 0.05,
+        airAccelx: 0.02,
         friction: 0.1,
-        airFriction: 0.05, //todo
-        maxVel: 0.3,
+        airFriction: 0.02, //todo
+        maxVel: 0.25,
         gravity: 0.1,
         fallSpeed: 1.5,
         jumpHeight: 2,
-        jumpSpeed: 3 //higher means slower jump
+        jumpSpeed: 3, //higher means slower jump
+        touchingWall: false
     };
 
     window.onresize = resizeCanvas;
@@ -101,12 +105,26 @@ $(function () {
     function updateHorVel() {
         if (keysDown[37] === true && keysDown[39] === undefined) { //left arrow & not right
             if (Math.sqrt(Math.pow(mc.velx, 2)) < mc.maxVel || mc.velx >= 0) { //if aboslute value is less than max vel or vel is in the opposite direction being pressed
-                mc.velx -= mc.accelx;
+                switch (mc.onGround) {
+                    case true:
+                        mc.velx -= mc.accelx;
+                        break;
+                    default:
+                        mc.velx -= mc.airAccelx;
+                        break;
+                }
             }
         }
         if (keysDown[39] === true && keysDown[37] === undefined) { //right arrow & not left
             if (Math.sqrt(Math.pow(mc.velx, 2)) < mc.maxVel || mc.velx <= 0) { //if aboslute value is less than max vel or vel is in the opposite direction being pressed
-                mc.velx += mc.accelx;
+                switch (mc.onGround) {
+                    case true:
+                        mc.velx += mc.accelx;
+                        break;
+                    default:
+                        mc.velx += mc.airAccelx;
+                        break;
+                }
             }
         }
         if (keysDown[37] === undefined && keysDown[39] === undefined || keysDown[37] === true && keysDown[39] === true) { //neither left or right or both left and right
@@ -128,14 +146,14 @@ $(function () {
                     break;
                 default:
                     if (mc.velx > 0) { //if user is heading right
-                        if (mc.velx - mc.friction > 0) { //if velocity after friction isn't in the opposite direction
-                            mc.velx -= mc.friction;
+                        if (mc.velx - mc.airFriction > 0) { //if velocity after friction isn't in the opposite direction
+                            mc.velx -= mc.airFriction;
                         } else {
                             mc.velx = 0;
                         }
                     } else if (mc.velx < 0) { //if user is heading left
-                        if (mc.velx + mc.friction < 0) { //velocity plus friction is not less than zero
-                            mc.velx += mc.friction;
+                        if (mc.velx + mc.airFriction < 0) { //velocity plus friction is not less than zero
+                            mc.velx += mc.airFriction;
                         } else {
                             mc.velx = 0;
                         }
@@ -149,17 +167,64 @@ $(function () {
         if (38 in keysDown === true || //up
             32 in keysDown === true || //space
             90 in keysDown === true) { //z
-            if (mc.onGround === true) {
-                mc.vely += mc.jumpHeight;
+            if (mc.onGround === true) { //jump part
+                mc.vely = mc.jumpHeight;
                 mc.onGround = false;
             }
         }
-        if (mc.onGround === false && mc.vely > mc.fallSpeed * -1) { //TODO: make stage system so that collision actually works.
+        if (mc.onGround === false && //gravity part
+            mc.vely > mc.fallSpeed * -1) { //TODO: make stage system so that collision actually works.
             mc.vely -= mc.gravity;
         }
     }
 
-    function debugInfo() { //TODO
+    function updatePos() {
+
+        mc.x += mc.velx; //x
+        if (mc.onGround === true) {
+            var tempOnGround = false;
+            $.each(collisions[Math.trunc(mc.x)], function (index, val) { //y
+                console.log(val);
+                if (mc.x <= val[1] && mc.x >= val[0]) { //within a block
+                    tempOnGround = true;
+                }
+            });
+            $.each(collisions[Math.trunc(mc.x) + 1], function (index, val) {
+                if (mc.x <= val[1] && mc.x >= val[0]) { //within a block
+                    tempOnGround = true;
+                }
+            });
+            $.each(collisions[Math.trunc(mc.x) + 1], function (index, val) {
+                if (mc.x <= val[1] && mc.x >= val[0]) { //within a block
+                    tempOnGround = true;
+                }
+            });
+            mc.onGround = tempOnGround;
+        }
+
+
+
+
+        $.each(collisions[Math.trunc(mc.x)], function (index, val) { //y
+            if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) { //if will be inside block on next frame
+                mc.onGround = true;
+                mc.y = val[3];
+                mc.vely = 0;
+            }
+        });
+        $.each(collisions[Math.trunc(mc.x) + 1], function (index, val) {
+            if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) {
+                mc.onGround = true;
+                mc.y = val[3];
+                mc.vely = 0;
+            }
+        });
+        if (mc.onGround === false) {
+            mc.y += mc.vely / 3;
+        }
+    }
+
+    function debugInfo() {
         if (192 in keysDown === true &&
             temporaryValues.debugOverlay === false) {
             if (debugOverlay === false) {
@@ -176,8 +241,11 @@ $(function () {
         }
         if (debugOverlay === true) {
             ctx.fillStyle = '#263238';
-            ctx.fillText('x: ' + Math.round(100 * mc.x) / 100, 0, 20);
-            ctx.fillText('y: ' + Math.round(100 * mc.y) / 100, 0, 40);
+            ctx.fillText('x: ' + Math.round(100 * mc.x) / 100, 0, 80);
+            ctx.fillText('y: ' + Math.round(100 * mc.y) / 100, 0, 100);
+            ctx.fillText('vx: ' + Math.round(100 * mc.velx) / 100, 0, 120);
+            ctx.fillText('vy: ' + Math.round(100 * mc.vely) / 100, 0, 140);
+            ctx.fillText('onground: ' + mc.onGround, 0, 160);
         }
     }
 
@@ -189,26 +257,44 @@ $(function () {
         console.log(getCookie('level'));
     }
 
-    function drawStage() { //TODO
+    function drawStage() {
         $.each(stage, function (index1, val1) { //for each block in stage
             var column = val1;
             $.each(column, function (index2, val2) {
                 switch (val2) {
                     case 'bl': //black block
-                        ctx.fillRect(index1 * blockSize, canvas.height - index2 * blockSize, blockSize, blockSize); //TODO
+                        ctx.fillRect(index1 * blockSize, canvas.height - ((index2) * blockSize), blockSize, blockSize); //TODO
                         break;
                     default:
                         break;
                 }
             });
         });
-        //        ctx.fillRect(0, canvas.height - blockSize * 2, canvas.width, blockSize * 2);
+    }
+
+    function makeCollisions() {
+        $.each(stage, function (index1, val1) { //for each block in stage
+            var column = val1;
+            collisions.push([]);
+            $.each(column, function (index2, val2) {
+                switch (val2) {
+                    case 'bl': //black block
+                        collisions[index1].push([index1, index1 + 1, index2, index2 + 1]);
+                        break;
+                    default:
+                        break;
+                }
+            });
+        });
+        console.log(collisions);
     }
 
     //Load current level
     var stage = $.getJSON('levels/level' + getCookie('level') + '.json', (function () {
         stage = stage.responseJSON;
         console.log(stage);
+        makeCollisions();
+        window.requestAnimationFrame(mainGameLoop);
     }));
 
     function mainGameLoop() {
@@ -217,8 +303,7 @@ $(function () {
             case 'menu':
                 updateHorVel();
                 updateVerVel();
-                mc.x += mc.velx;
-                mc.y += mc.vely / 3;
+                updatePos();
                 drawStage();
                 drawChar();
                 debugInfo();
@@ -228,5 +313,4 @@ $(function () {
         }
         window.requestAnimationFrame(mainGameLoop);
     }
-    window.requestAnimationFrame(mainGameLoop);
 });
