@@ -70,7 +70,7 @@ $(function () {
         airFriction: 0.02, //todo
         maxVel: 0.25,
         gravity: 0.1,
-        fallSpeed: 1.5,
+        fallSpeed: 1.75,
         jumpHeight: 2,
         jumpSpeed: 3, //higher means slower jump
         touchingWall: false
@@ -190,6 +190,7 @@ $(function () {
     function updatePos() {
 
         mc.x += mc.velx; // function for x
+        //        if (mc.x)
         $.each(collisions[Math.trunc(mc.x)], function (index, val) { //y
             if (val[3]) {
                 if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) { //if will be inside block on next frame
@@ -228,6 +229,20 @@ $(function () {
             if (Array.isArray(collisions[Math.trunc(mc.x + 1)][Math.trunc(mc.y) - 1]) === true) { //saame
                 if (collisions[Math.trunc(mc.x + 1)][Math.trunc(mc.y) - 1][3] === mc.y) {
                     tempOnGround = true;
+                }
+            }
+        }
+        if ([Math.trunc(mc.x)] in collisions) {
+            if (collisions[Math.trunc(mc.x)][mc.y - 1] === '' && collisions[Math.trunc(mc.x + 1)] !== '') { //if the block your truncated x is on is an empty string and in front isn't
+                if (isWithin(mc.x, Math.trunc(mc.x), 0.1)) {
+                    tempOnGround = false;
+                }
+            }
+        }
+        if ([Math.trunc(mc.x + 1)] in collisions) {
+            if (collisions[Math.trunc(mc.x + 1)][mc.y - 1] === '' && collisions[Math.trunc(mc.x)][mc.y - 1] !== '') { //same as above but opposite
+                if (isWithin(mc.x, Math.trunc(mc.x + 1), 0.1)) {
+                    tempOnGround = false;
                 }
             }
         }
@@ -292,7 +307,7 @@ $(function () {
                         collisions[index1].push([index1, index1 + 1, index2, index2 + 1]);
                         break;
                     default:
-                        collisions[index1].push([[]]);
+                        collisions[index1].push('');
                         break;
                 }
             });
@@ -311,7 +326,7 @@ $(function () {
     function mainGameLoop() {
         switch (mode) {
             case 'menu':
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.clearRect(0, 0, canvas.width, canvas.height + blockSize);
                 updateHorVel();
                 updateVerVel();
                 updatePos();
