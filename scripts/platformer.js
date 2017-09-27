@@ -51,10 +51,10 @@ $(function () {
     var mc = { //all the info on the mc
         idleR: loadImage('img/sprites/zeeTee/idleR.png'),
         x: 0,
-        y: 3,
+        y: 10,
         velx: 0,
         vely: 0,
-        onGround: true,
+        onGround: false,
         accelx: 0.05,
         airAccelx: 0.02,
         friction: 0.1,
@@ -180,22 +180,26 @@ $(function () {
 
     function updatePos() {
 
-        mc.x += mc.velx; //x
+        mc.x += mc.velx; // function for x
         if (mc.onGround === true) {
             var tempOnGround = false;
-            $.each(collisions[Math.trunc(mc.x)], function (index, val) { //y
-                console.log(val);
-                if (mc.x <= val[1] && mc.x >= val[0]) { //within a block
+            $.each(collisions[Math.trunc(mc.x)], function (index, val) {
+                console.log(mc.x <= val[1] && mc.x >= val[0] &&
+                    mc.y >= val[3]);
+                if (mc.x <= val[1] && mc.x >= val[0] &&
+                    mc.y >= val[3]) { //within x bounds of a block
                     tempOnGround = true;
                 }
             });
             $.each(collisions[Math.trunc(mc.x) + 1], function (index, val) {
-                if (mc.x <= val[1] && mc.x >= val[0]) { //within a block
+                if (mc.x <= val[1] && mc.x >= val[0] &&
+                    mc.y >= val[3]) {
                     tempOnGround = true;
                 }
             });
-            $.each(collisions[Math.trunc(mc.x) + 1], function (index, val) {
-                if (mc.x <= val[1] && mc.x >= val[0]) { //within a block
+            $.each(collisions[Math.trunc(mc.x) + -1], function (index, val) {
+                if (mc.x <= val[1] && mc.x >= val[0] &&
+                    mc.y >= val[3]) {
                     tempOnGround = true;
                 }
             });
@@ -252,9 +256,8 @@ $(function () {
     //sets the current level
     if (!getCookie('level')) {
         setCookie('level', 1, 9999);
-        console.log(getCookie('level'));
     } else {
-        console.log(getCookie('level'));
+//        console.log(getCookie('level'));
     }
 
     function drawStage() {
@@ -263,7 +266,8 @@ $(function () {
             $.each(column, function (index2, val2) {
                 switch (val2) {
                     case 'bl': //black block
-                        ctx.fillRect(index1 * blockSize, canvas.height - ((index2) * blockSize), blockSize, blockSize); //TODO
+                        ctx.fillStyle = "#000"
+                        ctx.fillRect(index1 * blockSize - 1, canvas.height - ((index2) * blockSize) - 1, blockSize + 2, blockSize + 2); //TODO
                         break;
                     default:
                         break;
@@ -286,13 +290,13 @@ $(function () {
                 }
             });
         });
-        console.log(collisions);
+//        console.log(collisions);
     }
 
     //Load current level
     var stage = $.getJSON('levels/level' + getCookie('level') + '.json', (function () {
         stage = stage.responseJSON;
-        console.log(stage);
+//        console.log(stage);
         makeCollisions();
         window.requestAnimationFrame(mainGameLoop);
     }));
