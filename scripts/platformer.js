@@ -48,6 +48,15 @@ $(function () {
         return "";
     }
 
+    //compares to see if num1 and 2 are within range of each other. returns true or false
+    function isWithin(num1, num2, range) {
+        if (Math.sqrt(Math.pow(num1 - num2, 2)) < range) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     var mc = { //all the info on the mc
         idleR: loadImage('img/sprites/zeeTee/idleR.png'),
         x: 0,
@@ -181,34 +190,6 @@ $(function () {
     function updatePos() {
 
         mc.x += mc.velx; // function for x
-        //        if (mc.onGround === true) {
-        //            var tempOnGround = false;
-        //            $.each(collisions[Math.trunc(mc.x)], function (index, val) {
-        //                console.log(mc.x <= val[1] && mc.x >= val[0] &&
-        //                    mc.y >= val[3]);
-        //                if (mc.x <= val[1] && mc.x >= val[0] &&
-        //                    mc.y >= val[3]) { //within x bounds of a block
-        //                    tempOnGround = true;
-        //                }
-        //            });
-        //            $.each(collisions[Math.trunc(mc.x) + 1], function (index, val) {
-        //                if (mc.x <= val[1] && mc.x >= val[0] &&
-        //                    mc.y >= val[3]) {
-        //                    tempOnGround = true;
-        //                }
-        //            });
-        //            $.each(collisions[Math.trunc(mc.x) + -1], function (index, val) {
-        //                if (mc.x <= val[1] && mc.x >= val[0] &&
-        //                    mc.y >= val[3]) {
-        //                    tempOnGround = true;
-        //                }
-        //            });
-        //            mc.onGround = tempOnGround;
-        //        }
-
-
-
-
         $.each(collisions[Math.trunc(mc.x)], function (index, val) { //y
             if (val[3]) {
                 if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) { //if will be inside block on next frame
@@ -236,15 +217,15 @@ $(function () {
 
     function updateGroundState() {
         var tempOnGround = false;
-        if (Array.isArray(collisions[Math.trunc(mc.x)]) === true) {
-            if (Array.isArray(collisions[Math.trunc(mc.x)][Math.trunc(mc.y) - 1]) === true) {
+        if (Array.isArray(collisions[Math.trunc(mc.x)]) === true) { //if first nested array exists
+            if (Array.isArray(collisions[Math.trunc(mc.x)][Math.trunc(mc.y) - 1]) === true) { //if second one exists
                 if (collisions[Math.trunc(mc.x)][Math.trunc(mc.y) - 1][3] === mc.y) {
                     tempOnGround = true;
                 }
             }
         }
-        if (Array.isArray(collisions[Math.trunc(mc.x + 1)]) === true) {
-            if (Array.isArray(collisions[Math.trunc(mc.x + 1)][Math.trunc(mc.y) - 1]) === true) {
+        if (Array.isArray(collisions[Math.trunc(mc.x + 1)]) === true) { //same as above
+            if (Array.isArray(collisions[Math.trunc(mc.x + 1)][Math.trunc(mc.y) - 1]) === true) { //saame
                 if (collisions[Math.trunc(mc.x + 1)][Math.trunc(mc.y) - 1][3] === mc.y) {
                     tempOnGround = true;
                 }
