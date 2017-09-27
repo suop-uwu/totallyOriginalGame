@@ -181,51 +181,76 @@ $(function () {
     function updatePos() {
 
         mc.x += mc.velx; // function for x
-        if (mc.onGround === true) {
-            var tempOnGround = false;
-            $.each(collisions[Math.trunc(mc.x)], function (index, val) {
-                console.log(mc.x <= val[1] && mc.x >= val[0] &&
-                    mc.y >= val[3]);
-                if (mc.x <= val[1] && mc.x >= val[0] &&
-                    mc.y >= val[3]) { //within x bounds of a block
-                    tempOnGround = true;
-                }
-            });
-            $.each(collisions[Math.trunc(mc.x) + 1], function (index, val) {
-                if (mc.x <= val[1] && mc.x >= val[0] &&
-                    mc.y >= val[3]) {
-                    tempOnGround = true;
-                }
-            });
-            $.each(collisions[Math.trunc(mc.x) + -1], function (index, val) {
-                if (mc.x <= val[1] && mc.x >= val[0] &&
-                    mc.y >= val[3]) {
-                    tempOnGround = true;
-                }
-            });
-            mc.onGround = tempOnGround;
-        }
+        //        if (mc.onGround === true) {
+        //            var tempOnGround = false;
+        //            $.each(collisions[Math.trunc(mc.x)], function (index, val) {
+        //                console.log(mc.x <= val[1] && mc.x >= val[0] &&
+        //                    mc.y >= val[3]);
+        //                if (mc.x <= val[1] && mc.x >= val[0] &&
+        //                    mc.y >= val[3]) { //within x bounds of a block
+        //                    tempOnGround = true;
+        //                }
+        //            });
+        //            $.each(collisions[Math.trunc(mc.x) + 1], function (index, val) {
+        //                if (mc.x <= val[1] && mc.x >= val[0] &&
+        //                    mc.y >= val[3]) {
+        //                    tempOnGround = true;
+        //                }
+        //            });
+        //            $.each(collisions[Math.trunc(mc.x) + -1], function (index, val) {
+        //                if (mc.x <= val[1] && mc.x >= val[0] &&
+        //                    mc.y >= val[3]) {
+        //                    tempOnGround = true;
+        //                }
+        //            });
+        //            mc.onGround = tempOnGround;
+        //        }
 
 
 
 
         $.each(collisions[Math.trunc(mc.x)], function (index, val) { //y
-            if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) { //if will be inside block on next frame
-                mc.onGround = true;
-                mc.y = val[3];
-                mc.vely = 0;
+            if (val[3]) {
+                if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) { //if will be inside block on next frame
+                    mc.onGround = true;
+                    mc.y = val[3];
+                    mc.vely = 0;
+                }
             }
         });
         $.each(collisions[Math.trunc(mc.x) + 1], function (index, val) {
-            if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) {
-                mc.onGround = true;
-                mc.y = val[3];
-                mc.vely = 0;
+            if (val[3]) {
+                if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) {
+                    mc.onGround = true;
+                    mc.y = val[3];
+                    mc.vely = 0;
+                }
             }
         });
+
         if (mc.onGround === false) {
             mc.y += mc.vely / 3;
         }
+
+    }
+
+    function updateGroundState() {
+        var tempOnGround = false;
+        if (Array.isArray(collisions[Math.trunc(mc.x)]) === true) {
+            if (Array.isArray(collisions[Math.trunc(mc.x)][Math.trunc(mc.y) - 1]) === true) {
+                if (collisions[Math.trunc(mc.x)][Math.trunc(mc.y) - 1][3] === mc.y) {
+                    tempOnGround = true;
+                }
+            }
+        }
+        if (Array.isArray(collisions[Math.trunc(mc.x + 1)]) === true) {
+            if (Array.isArray(collisions[Math.trunc(mc.x + 1)][Math.trunc(mc.y) - 1]) === true) {
+                if (collisions[Math.trunc(mc.x + 1)][Math.trunc(mc.y) - 1][3] === mc.y) {
+                    tempOnGround = true;
+                }
+            }
+        }
+        mc.onGround = tempOnGround;
     }
 
     function debugInfo() {
@@ -257,7 +282,7 @@ $(function () {
     if (!getCookie('level')) {
         setCookie('level', 1, 9999);
     } else {
-//        console.log(getCookie('level'));
+        //        console.log(getCookie('level'));
     }
 
     function drawStage() {
@@ -266,7 +291,7 @@ $(function () {
             $.each(column, function (index2, val2) {
                 switch (val2) {
                     case 'bl': //black block
-                        ctx.fillStyle = "#000"
+                        ctx.fillStyle = "#000";
                         ctx.fillRect(index1 * blockSize - 1, canvas.height - ((index2) * blockSize) - 1, blockSize + 2, blockSize + 2); //TODO
                         break;
                     default:
@@ -286,28 +311,32 @@ $(function () {
                         collisions[index1].push([index1, index1 + 1, index2, index2 + 1]);
                         break;
                     default:
+                        collisions[index1].push([[]]);
                         break;
                 }
             });
         });
-//        console.log(collisions);
+        //        console.log(collisions);
     }
 
     //Load current level
     var stage = $.getJSON('levels/level' + getCookie('level') + '.json', (function () {
         stage = stage.responseJSON;
-//        console.log(stage);
+        //        console.log(stage);
         makeCollisions();
         window.requestAnimationFrame(mainGameLoop);
     }));
 
     function mainGameLoop() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
         switch (mode) {
             case 'menu':
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
                 updateHorVel();
                 updateVerVel();
                 updatePos();
+                if (mc.onGround === true) {
+                    updateGroundState();
+                }
                 drawStage();
                 drawChar();
                 debugInfo();
