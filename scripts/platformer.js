@@ -188,10 +188,16 @@ $(function () {
     }
 
     function updatePos() {
-
-        mc.x += mc.velx; // function for x
+        if (Array.isArray(collisions[Math.trunc(mc.x + 1)])) { // function for x
+            if (Array.isArray(collisions[Math.trunc(mc.x + 1)][Math.trunc(mc.y)])) { //TODO
+                if (collisions[Math.trunc(mc.x + 1)][Math.trunc(mc.y)][0] > mc.x + 1) { // if leftmost border of block to the right of mc is further right than right side of mc
+                    mc.x += mc.velx;
+                }
+            }
+        }
+        if (mc.x + mc.velx)
         //        if (mc.x)
-        $.each(collisions[Math.trunc(mc.x)], function (index, val) { //y
+            $.each(collisions[Math.trunc(mc.x)], function (index, val) { //y
             if (val[3]) {
                 if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) { //if will be inside block on next frame
                     mc.onGround = true;
@@ -232,7 +238,7 @@ $(function () {
                 }
             }
         }
-        if ([Math.trunc(mc.x)] in collisions) {
+        if ([Math.trunc(mc.x)] in collisions) { //if the value exists. made to prevent errors
             if (collisions[Math.trunc(mc.x)][mc.y - 1] === '' && collisions[Math.trunc(mc.x + 1)] !== '') { //if the block your truncated x is on is an empty string and in front isn't
                 if (isWithin(mc.x, Math.trunc(mc.x), 0.1)) {
                     tempOnGround = false;
