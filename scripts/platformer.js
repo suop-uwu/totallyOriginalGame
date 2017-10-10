@@ -67,13 +67,14 @@ $(function () {
         accelx: 0.05,
         airAccelx: 0.02,
         friction: 0.1,
-        airFriction: 0.02, //todo
+        airFriction: 0.02,
         maxVel: 0.25,
         gravity: 0.1,
         fallSpeed: 1.75,
         jumpHeight: 2,
         jumpSpeed: 3, //higher means slower jump
-        touchingWall: false
+        touchingWall: false,
+        collisionWidth: 0.9
     };
 
     window.onresize = resizeCanvas;
@@ -188,16 +189,27 @@ $(function () {
     }
 
     function updatePos() {
-        if (Array.isArray(collisions[Math.trunc(mc.x + 1)])) { // function for x
-            if (Array.isArray(collisions[Math.trunc(mc.x + 1)][Math.trunc(mc.y)])) { //TODO
-                if (collisions[Math.trunc(mc.x + 1)][Math.trunc(mc.y)][0] > mc.x + 1) { // if leftmost border of block to the right of mc is further right than right side of mc
-                    mc.x += mc.velx;
-                }
+        //        console.log(mc.x + mc.velx + 0.9 < collisions[Math.trunc(mc.x) + 1][Math.trunc(mc.y)] ||
+        //            collisions[Math.trunc(mc.x) + 1][Math.trunc(mc.y)] === '' ||
+        //            collisions[Math.trunc(mc.x) + 1][Math.trunc(mc.y)] === null);
+        //TODO refactor so that there is only one if for both directions
+        var tempPartOfArray = 3;
+        var tempOffset = 0;
+        if (mc.velx > 0) { //is going right
+            tempPartOfArray = 0;
+            tempOffset = 1;
+        } else if (typeof mc.velx !== 'number') { //error message
+            console.log('horizontal velocity is invalid somehow. currently returns \'' + mc.velx + '\'');
+        }
+        if (collisions[Math.trunc(mc.x) + tempOffset] && Array.isArray(collisions[Math.trunc(mc.x + tempOffset)][Math.trunc(mc.y)]) !== true) { //if block to right / left is not an array
+            mc.x += mc.velx;
+        } else { //if it is
+            if (collisions[Math.trunc(mc.x + tempOffset)] && collisions[Math.trunc(mc.x + tempOffset)][Math.trunc(mc.y)] &&
+                mc.x + mc.velx + mc.collisionWidth >= collisions[Math.trunc(mc.x + tempOffset)][Math.trunc(mc.y)][tempPartOfArray]) {
+
             }
         }
-        if (mc.x + mc.velx)
-        //        if (mc.x)
-            $.each(collisions[Math.trunc(mc.x)], function (index, val) { //y
+        $.each(collisions[Math.trunc(mc.x)], function (index, val) { //y
             if (val[3]) {
                 if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) { //if will be inside block on next frame
                     mc.onGround = true;
@@ -206,6 +218,8 @@ $(function () {
                 }
             }
         });
+
+
         $.each(collisions[Math.trunc(mc.x) + 1], function (index, val) {
             if (val[3]) {
                 if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) {
@@ -294,7 +308,7 @@ $(function () {
                 switch (val2) {
                     case 'bl': //black block
                         ctx.fillStyle = "#000";
-                        ctx.fillRect(index1 * blockSize - 1, canvas.height - ((index2) * blockSize) - 1, blockSize + 2, blockSize + 2); //TODO
+                        ctx.fillRect(index1 * blockSize - 1, canvas.height - ((index2) * blockSize) - 1, blockSize + 2, blockSize + 2);
                         break;
                     default:
                         break;
