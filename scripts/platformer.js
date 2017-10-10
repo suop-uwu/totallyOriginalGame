@@ -56,24 +56,26 @@ $(function () {
             return false;
         }
     }
-
+    var blocks = {
+        basic: loadImage('img/sprites/blocks/basic.png')
+    };
     var mc = { //all the info on the mc
         idleR: loadImage('img/sprites/zeeTee/idleR.png'),
         x: 0,
         y: 10,
-        velx: 0,
-        vely: 0,
+        velx: 1,
+        vely: 1,
         onGround: false,
         accelx: 0.05,
         airAccelx: 0.02,
         friction: 0.1,
         airFriction: 0.02,
-        maxVel: 0.25,
+        maxVel: 0.2,
         gravity: 0.1,
         fallSpeed: 1.75,
-        jumpHeight: 2,
+        fullHop: 1.8, //enough to jump around 5 blocks
+        shortHop: 0.6,
         jumpSpeed: 3, //higher means slower jump
-        touchingWall: false,
         collisionWidth: 0.9
     };
 
@@ -178,7 +180,7 @@ $(function () {
             32 in keysDown === true || //space
             90 in keysDown === true) { //z
             if (mc.onGround === true) { //jump part
-                mc.vely = mc.jumpHeight;
+                mc.vely = mc.fullHop;
                 mc.onGround = false;
             }
         }
@@ -189,26 +191,56 @@ $(function () {
     }
 
     function updatePos() {
-        //        console.log(mc.x + mc.velx + 0.9 < collisions[Math.trunc(mc.x) + 1][Math.trunc(mc.y)] ||
-        //            collisions[Math.trunc(mc.x) + 1][Math.trunc(mc.y)] === '' ||
-        //            collisions[Math.trunc(mc.x) + 1][Math.trunc(mc.y)] === null);
-        //TODO refactor so that there is only one if for both directions
-        var tempPartOfArray = 3;
+        var tempPartOfArray = 1;
         var tempOffset = 0;
+        var tempOffset2 = -1;
         if (mc.velx > 0) { //is going right
             tempPartOfArray = 0;
             tempOffset = 1;
+            tempOffset2 = 2;
         } else if (typeof mc.velx !== 'number') { //error message
             console.log('horizontal velocity is invalid somehow. currently returns \'' + mc.velx + '\'');
         }
-        if (collisions[Math.trunc(mc.x) + tempOffset] && Array.isArray(collisions[Math.trunc(mc.x + tempOffset)][Math.trunc(mc.y)]) !== true) { //if block to right / left is not an array
+        if (collisions[Math.trunc(mc.x) + tempOffset] && Array.isArray(collisions[Math.trunc(mc.x + tempOffset)][Math.trunc(mc.y)]) !== true &&
+            collisions[Math.trunc(mc.x) + tempOffset2] && Array.isArray(collisions[Math.trunc(mc.x + tempOffset2)][Math.trunc(mc.y)]) !== true) { //if block to right / left is not an array
             mc.x += mc.velx;
         } else { //if it is
-            if (collisions[Math.trunc(mc.x + tempOffset)] && collisions[Math.trunc(mc.x + tempOffset)][Math.trunc(mc.y)] &&
+            console.log('test');
+            switch (tempOffset === 0) {
+                case true: //left
+                    if (collisions[Math.trunc(mc.x) - 1] && collisions[Math.trunc(mc.x) - 1][Math.trunc(mc.y)] && //if it exists
+                        mc.x + mc.velx <= collisions[Math.trunc(mc.x) - 1][Math.trunc(mc.y)][1]) {
+                        mc.x = Math.trunc(mc.x) + 0.05;
+                        mc.velx = 0;
+                    } else {
+                        mc.x += mc.velx;
+                    }
+                    break;
+                case false: //right
+                    if (collisions[Math.trunc(mc.x + 2)] && collisions[Math.trunc(mc.x + 2)][Math.trunc(mc.y)] && //if it exists
+                        mc.x + mc.velx + 1 >= collisions[Math.trunc(mc.x + 2)][Math.trunc(mc.y)][0]) {
+                        mc.x = Math.trunc(mc.x + 1) - 0.05;
+                        mc.velx = 0;
+                    } else {
+                        mc.x += mc.velx;
+                    }
+                    break;
+            }
+
+            //                if (mc.x + mc.velx + mc.collisionWidth >= collisions[Math.trunc(mc.x + tempOffset)][Math.trunc(mc.y)][tempPartOfArray])
+            //                    mc.velx = 0;
+            //                if (tempOffset === 0) {
+            //                    mc.x = Math.trunc(mc.x + 1) + 0.05;
+            //                } else {
+            //                    mc.x = Math.trunc(mc.x) - 0.05;
+            //                }
+
+            if (collisions[Math.trunc(mc.x + tempOffset)] && collisions[Math.trunc(mc.x + tempOffset)][Math.trunc(mc.y)] && //if it exists
                 mc.x + mc.velx + mc.collisionWidth >= collisions[Math.trunc(mc.x + tempOffset)][Math.trunc(mc.y)][tempPartOfArray]) {
 
             }
         }
+
         $.each(collisions[Math.trunc(mc.x)], function (index, val) { //y
             if (val[3]) {
                 if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) { //if will be inside block on next frame
@@ -304,11 +336,14 @@ $(function () {
     function drawStage() {
         $.each(stage, function (index1, val1) { //for each block in stage
             var column = val1;
-            $.each(column, function (index2, val2) {
+            $.each(column, function (index2, val2) { //TODO make a dynamic system for blocks that can be easily
                 switch (val2) {
-                    case 'bl': //black block
+                    case 'blk': //black block
                         ctx.fillStyle = "#000";
                         ctx.fillRect(index1 * blockSize - 1, canvas.height - ((index2) * blockSize) - 1, blockSize + 2, blockSize + 2);
+                        break;
+                    case 'bsc': //basic block
+                        ctx.drawImage(blocks.basic, index1 * blockSize, canvas.height - index2 * blockSize, blockSize, blockSize);
                         break;
                     default:
                         break;
@@ -323,7 +358,10 @@ $(function () {
             collisions.push([]);
             $.each(column, function (index2, val2) {
                 switch (val2) {
-                    case 'bl': //black block
+                    case 'blk': //black block
+                        collisions[index1].push([index1, index1 + 1, index2, index2 + 1]);
+                        break;
+                    case 'bsc':
                         collisions[index1].push([index1, index1 + 1, index2, index2 + 1]);
                         break;
                     default:
