@@ -78,6 +78,7 @@ $(function () {
         fallSpeed: 1.75,
         fullHop: 1.6, //enough to jump around 5 blocks
         shortHop: 0.8,
+        jumpsquatDuration: 4, //in frames
         jumpSpeed: 3, //higher means slower jump
         collisionWidth: 0.9,
         width: 1,
@@ -201,7 +202,7 @@ $(function () {
                             break;
                     }
                     mc.onGround = false;
-                }, 1000 / 60 * 4); // four frame jumpsquat
+                }, 1000 / 60 * mc.jumpsquatDuration); // four frame jumpsquat
             }
         }
         if (mc.onGround === false && //gravity part
@@ -211,10 +212,10 @@ $(function () {
     }
 
     function updateFacing() {
-        if (37 in keysDown === true) { //left
+        if (37 in keysDown === true && 39 in keysDown === false) { //left arrow
             mc.facing = 0;
         }
-        if (39 in keysDown === true) { //right
+        if (39 in keysDown === true && 37 in keysDown === false) { //right arrow
             mc.facing = 1;
         }
     }
