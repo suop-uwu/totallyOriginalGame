@@ -2,7 +2,7 @@ var $, window, document, Image; //only so that my code checker doesn't get angry
 /*pitfalls:
 linter doesn't recognize the use of nonexistent properties of objects
 */
-//TODO make scrolling levels and custom stage system.
+//TODO make scrolling levels 
 $(function () {
     var canvas = $('#mainCanvas')[0];
     var ctx = canvas.getContext('2d');
@@ -64,16 +64,17 @@ $(function () {
         jumpsquat: [loadImage('img/sprites/zeeTee/jumpsquatL.png'), loadImage('img/sprites/zeeTee/jumpsquatR.png')],
         currentSprite: loadImage('img/sprites/zeeTee/idleR.png'),
         facing: 1, // 0 is left, 1 is right
-        x: 0,
+        x: 15,
         y: 10,
-        velx: 1,
+        velx: 0,
         vely: 1,
         onGround: false,
         accelx: 0.05,
         airAccelx: 0.02,
         friction: 0.1,
-        airFriction: 0.02,
-        maxVel: 0.2,
+        airFriction: 0.01,
+        walkSpeed: 0.15,
+        runSpeed: 0.21,
         gravity: 0.1,
         fallSpeed: 1.75,
         fullHop: 1.6, //enough to jump around 5 blocks
@@ -114,40 +115,60 @@ $(function () {
         ctx.drawImage(mc.currentSprite, mc.x * blockSize, canvas.height - mc.y * blockSize, blockSize * mc.width, blockSize * mc.height);
     }
 
+    function absoluteValue(number) {
+        return Math.sqrt(Math.pow(number, 2));
+    }
+
     // .o88b. db   db  .d8b.  d8888b.  .d8b.   .o88b. d888888b d88888b d8888b.      d8888b. db   db db    db .d8888. d888888b  .o88b. .d8888. 
     //d8P  Y8 88   88 d8' `8b 88  `8D d8' `8b d8P  Y8 `~~88~~' 88'     88  `8D      88  `8D 88   88 `8b  d8' 88'  YP   `88'   d8P  Y8 88'  YP 
     //8P      88ooo88 88ooo88 88oobY' 88ooo88 8P         88    88ooooo 88oobY'      88oodD' 88ooo88  `8bd8'  `8bo.      88    8P      `8bo.   
     //8b      88~~~88 88~~~88 88`8b   88~~~88 8b         88    88~~~~~ 88`8b        88~~~   88~~~88    88      `Y8b.    88    8b        `Y8b. 
     //Y8b  d8 88   88 88   88 88 `88. 88   88 Y8b  d8    88    88.     88 `88.      88      88   88    88    db   8D   .88.   Y8b  d8 db   8D 
     // `Y88P' YP   YP YP   YP 88   YD YP   YP  `Y88P'    YP    Y88888P 88   YD      88      YP   YP    YP    `8888Y' Y888888P  `Y88P' `8888Y' 
-    function updateHorVel() {
+    function updateHorVel() { //TODO refactor sometime
         if (keysDown[37] === true && keysDown[39] === undefined) { //left arrow & not right
-            if (Math.sqrt(Math.pow(mc.velx, 2)) < mc.maxVel || mc.velx >= 0) { //if aboslute value is less than max vel or vel is in the opposite direction being pressed
+            if (absoluteValue(mc.velx, 2) < mc.runSpeed || mc.velx >= 0) { //if aboslute value is less than max vel or vel is in the opposite direction being pressed
                 switch (mc.onGround) {
                     case true:
-                        mc.velx -= mc.accelx;
-                        mc.currentSprite = mc.idle[mc.facing];
+                        if (absoluteValue(mc.velx) < mc.walkSpeed || absoluteValue(mc.velx) < mc.runSpeed && keysDown[16] === true) {
+                            mc.velx -= mc.accelx;
+                            mc.currentSprite = mc.idle[mc.facing]; //todo make actual walking / running sprites
+                        }
                         break;
                     default:
-                        mc.velx -= mc.airAccelx;
-                        break;
+                        if (absoluteValue(mc.velx) < mc.walkSpeed || absoluteValue(mc.velx) < mc.runSpeed && keysDown[16] === true) {
+                            mc.velx -= mc.airAccelx;
+                        }
+                        break; //TODO fix bug that causes you to keep moving after you release when you hit another key. seems to be affected by velocity.
+                        //todo also fix bug that allows you to clip through corners of boxes and when your feet are below a platform
                 }
             }
+
         }
         if (keysDown[39] === true && keysDown[37] === undefined) { //right arrow & not left
-            if (Math.sqrt(Math.pow(mc.velx, 2)) < mc.maxVel || mc.velx <= 0) { //if aboslute value is less than max vel or vel is in the opposite direction being pressed
+            if (absoluteValue(mc.velx, 2) < mc.runSpeed || mc.velx <= 0) { //if aboslute value is less than max vel or vel is in the opposite direction being pressed
                 switch (mc.onGround) {
                     case true:
-                        mc.velx += mc.accelx;
-                        mc.currentSprite = mc.idle[mc.facing];
+                        if (absoluteValue(mc.velx) < mc.walkSpeed || absoluteValue(mc.velx) < mc.runSpeed && keysDown[16] === true) {
+                            mc.velx += mc.accelx;
+                            mc.currentSprite = mc.idle[mc.facing];
+                        }
                         break;
                     default:
-                        mc.velx += mc.airAccelx;
+                        if (absoluteValue(mc.velx) < mc.walkSpeed || absoluteValue(mc.velx) < mc.runSpeed && keysDown[16] === true) {
+                            mc.velx += mc.airAccelx;
+                        }
                         break;
                 }
             }
         }
-        if (keysDown[37] === undefined && keysDown[39] === undefined || keysDown[37] === true && keysDown[39] === true) { //neither left or right or both left and right
+
+
+
+
+
+
+        if (keysDown[37] === undefined && keysDown[39] === undefined || keysDown[37] === true && keysDown[39] === true) { //neither left or right or both left and right, basically friction
             switch (mc.onGround) {
                 case true:
                     if (mc.velx > 0) { //if user is heading right
@@ -181,6 +202,9 @@ $(function () {
                     break;
             }
         }
+        if (16 in keysDown === false && absoluteValue(mc.velx) > mc.walkSpeed + 0.1) {
+
+        }
     }
 
     function updateVerVel() {
@@ -206,7 +230,7 @@ $(function () {
             }
         }
         if (mc.onGround === false && //gravity part
-            mc.vely > mc.fallSpeed * -1) { //TODO: make stage system so that collision actually works.
+            mc.vely > mc.fallSpeed * -1) {
             mc.vely -= mc.gravity;
         }
     }
@@ -224,6 +248,9 @@ $(function () {
         var tempPartOfArray = 1;
         var tempOffset = 0;
         var tempOffset2 = -1;
+
+
+        //x
         if (mc.velx > 0) { //is going right
             tempPartOfArray = 0;
             tempOffset = 1;
@@ -241,7 +268,6 @@ $(function () {
                         mc.x + mc.velx <= collisions[Math.trunc(mc.x) - 1][Math.trunc(mc.y)][1]) { // if pos of next frame is less than rightmost collision of block to left
                         mc.x = Math.trunc(mc.x) + 0.05;
                         mc.velx = 0;
-                        console.log('test');
                     } else {
                         mc.x += mc.velx;
 
@@ -259,14 +285,23 @@ $(function () {
             }
         }
 
-        $.each(collisions[Math.trunc(mc.x)], function (index, val) { //y
-            if (val[3]) {
-                if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) { //if will be inside block on next frame
+
+
+        //y
+        $.each(collisions[Math.trunc(mc.x)], function (index, val) { // val[3] is topmost hitbox, 2 is bottom
+            if (val[3]) { //if it exists
+                if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) { //if will be inside block underneath char on next frame
                     mc.onGround = true;
                     mc.y = val[3];
                     mc.vely = 0;
                 }
             }
+            if (mc.y + mc.height + mc.vely > val[2] && mc.y + mc.height < val[2]) {
+                mc.y = val[2] - mc.height;
+                mc.vely = 0;
+
+            }
+
         });
 
 
@@ -278,6 +313,11 @@ $(function () {
                     mc.vely = 0;
                 }
             }
+            if (mc.y + mc.height + mc.vely > val[2] && mc.y + mc.height < val[2]) {
+                mc.y = val[2] - mc.height;
+                mc.vely = 0;
+
+            }
         });
 
         if (mc.onGround === false) {
@@ -286,7 +326,7 @@ $(function () {
 
     }
 
-    function updateGroundState() {
+    function updateGroundState() { //supposed to detect when player walks off platform
         var tempOnGround = false;
         if (Array.isArray(collisions[Math.trunc(mc.x)]) === true) { //if first nested array exists
             if (Array.isArray(collisions[Math.trunc(mc.x)][Math.trunc(mc.y) - 1]) === true) { //if second one exists
@@ -303,14 +343,14 @@ $(function () {
             }
         }
         if ([Math.trunc(mc.x)] in collisions) { //if the value exists. made to prevent errors
-            if (collisions[Math.trunc(mc.x)][mc.y - 1] === '' && collisions[Math.trunc(mc.x + 1)] !== '') { //if the block your truncated x is on is an empty string and in front isn't
+            if (collisions[Math.trunc(mc.x)][mc.y - 1] === '  ' && collisions[Math.trunc(mc.x + 1)] !== '  ') { //if the block your truncated x is on is an empty string and in front isn't
                 if (isWithin(mc.x, Math.trunc(mc.x), 0.1)) {
                     tempOnGround = false;
                 }
             }
         }
         if ([Math.trunc(mc.x + 1)] in collisions) {
-            if (collisions[Math.trunc(mc.x + 1)][mc.y - 1] === '' && collisions[Math.trunc(mc.x)][mc.y - 1] !== '') { //same as above but opposite
+            if (collisions[Math.trunc(mc.x + 1)][mc.y - 1] === '  ' && collisions[Math.trunc(mc.x)][mc.y - 1] !== '  ') { //same as above but opposite
                 if (isWithin(mc.x, Math.trunc(mc.x + 1), 0.1)) {
                     tempOnGround = false;
                 }
@@ -407,13 +447,13 @@ $(function () {
                 updateHorVel();
                 updateVerVel();
                 updatePos();
+                updateFacing();
                 if (mc.onGround === true) {
                     updateGroundState();
                 }
                 drawStage();
                 drawChar();
                 debugInfo();
-                updateFacing();
                 break;
             default:
                 break;
