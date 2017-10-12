@@ -60,7 +60,10 @@ $(function () {
         basic: loadImage('img/sprites/blocks/basic.png')
     };
     var mc = { //all the info on the mc
-        idleR: loadImage('img/sprites/zeeTee/idleR.png'),
+        idle: [loadImage('img/sprites/zeeTee/idleL.png'), loadImage('img/sprites/zeeTee/idleR.png')],
+        jumpsquat: [loadImage('img/sprites/zeeTee/jumpsquatL.png'), loadImage('img/sprites/zeeTee/jumpsquatR.png')],
+        currentSprite: loadImage('img/sprites/zeeTee/idleR.png'),
+        facing: 1, // 0 is left, 1 is right
         x: 0,
         y: 10,
         velx: 1,
@@ -73,10 +76,12 @@ $(function () {
         maxVel: 0.2,
         gravity: 0.1,
         fallSpeed: 1.75,
-        fullHop: 1.8, //enough to jump around 5 blocks
-        shortHop: 0.6,
+        fullHop: 1.6, //enough to jump around 5 blocks
+        shortHop: 0.8,
         jumpSpeed: 3, //higher means slower jump
-        collisionWidth: 0.9
+        collisionWidth: 0.9,
+        width: 1,
+        height: 1
     };
 
     window.onresize = resizeCanvas;
@@ -105,7 +110,7 @@ $(function () {
     ctx.font = '20px Ubuntu Mono';
 
     function drawChar() {
-        ctx.drawImage(mc.idleR, mc.x * blockSize, canvas.height - mc.y * blockSize, blockSize, blockSize);
+        ctx.drawImage(mc.currentSprite, mc.x * blockSize, canvas.height - mc.y * blockSize, blockSize * mc.width, blockSize * mc.height);
     }
 
     // .o88b. db   db  .d8b.  d8888b.  .d8b.   .o88b. d888888b d88888b d8888b.      d8888b. db   db db    db .d8888. d888888b  .o88b. .d8888. 
@@ -120,6 +125,7 @@ $(function () {
                 switch (mc.onGround) {
                     case true:
                         mc.velx -= mc.accelx;
+                        mc.currentSprite = mc.idle[mc.facing];
                         break;
                     default:
                         mc.velx -= mc.airAccelx;
@@ -132,6 +138,7 @@ $(function () {
                 switch (mc.onGround) {
                     case true:
                         mc.velx += mc.accelx;
+                        mc.currentSprite = mc.idle[mc.facing];
                         break;
                     default:
                         mc.velx += mc.airAccelx;
@@ -180,13 +187,35 @@ $(function () {
             32 in keysDown === true || //space
             90 in keysDown === true) { //z
             if (mc.onGround === true) { //jump part
-                mc.vely = mc.fullHop;
-                mc.onGround = false;
+                mc.currentSprite = mc.jumpsquat[mc.facing];
+                window.setTimeout(function () {
+                    mc.currentSprite = mc.idle[mc.facing]; //TODO replace with actual air sprite
+                    switch (38 in keysDown === true || //up
+                        32 in keysDown === true || //space
+                        90 in keysDown === true) { //z
+                        case false:
+                            mc.vely = mc.shortHop;
+                            break;
+                        default:
+                            mc.vely = mc.fullHop;
+                            break;
+                    }
+                    mc.onGround = false;
+                }, 1000 / 60 * 4); // four frame jumpsquat
             }
         }
         if (mc.onGround === false && //gravity part
             mc.vely > mc.fallSpeed * -1) { //TODO: make stage system so that collision actually works.
             mc.vely -= mc.gravity;
+        }
+    }
+
+    function updateFacing() {
+        if (37 in keysDown === true) { //left
+            mc.facing = 0;
+        }
+        if (39 in keysDown === true) { //right
+            mc.facing = 1;
         }
     }
 
@@ -201,43 +230,31 @@ $(function () {
         } else if (typeof mc.velx !== 'number') { //error message
             console.log('horizontal velocity is invalid somehow. currently returns \'' + mc.velx + '\'');
         }
-        if (collisions[Math.trunc(mc.x) + tempOffset] && Array.isArray(collisions[Math.trunc(mc.x + tempOffset)][Math.trunc(mc.y)]) !== true &&
+        if (collisions[Math.trunc(mc.x) + tempOffset] && Array.isArray(collisions[Math.trunc(mc.x + tempOffset)][Math.trunc(mc.y)]) !== true && //if block 2 to right / left is not an array
             collisions[Math.trunc(mc.x) + tempOffset2] && Array.isArray(collisions[Math.trunc(mc.x + tempOffset2)][Math.trunc(mc.y)]) !== true) { //if block to right / left is not an array
             mc.x += mc.velx;
         } else { //if it is
-            console.log('test');
             switch (tempOffset === 0) {
                 case true: //left
                     if (collisions[Math.trunc(mc.x) - 1] && collisions[Math.trunc(mc.x) - 1][Math.trunc(mc.y)] && //if it exists
-                        mc.x + mc.velx <= collisions[Math.trunc(mc.x) - 1][Math.trunc(mc.y)][1]) {
+                        mc.x + mc.velx <= collisions[Math.trunc(mc.x) - 1][Math.trunc(mc.y)][1]) { // if pos of next frame is less than rightmost collision of block to left
                         mc.x = Math.trunc(mc.x) + 0.05;
                         mc.velx = 0;
+                        console.log('test');
                     } else {
                         mc.x += mc.velx;
+
                     }
                     break;
                 case false: //right
                     if (collisions[Math.trunc(mc.x + 2)] && collisions[Math.trunc(mc.x + 2)][Math.trunc(mc.y)] && //if it exists
-                        mc.x + mc.velx + 1 >= collisions[Math.trunc(mc.x + 2)][Math.trunc(mc.y)][0]) {
+                        mc.x + mc.velx + mc.width >= collisions[Math.trunc(mc.x + 2)][Math.trunc(mc.y)][0]) { // if pos of next frame is greater than
                         mc.x = Math.trunc(mc.x + 1) - 0.05;
                         mc.velx = 0;
                     } else {
                         mc.x += mc.velx;
                     }
                     break;
-            }
-
-            //                if (mc.x + mc.velx + mc.collisionWidth >= collisions[Math.trunc(mc.x + tempOffset)][Math.trunc(mc.y)][tempPartOfArray])
-            //                    mc.velx = 0;
-            //                if (tempOffset === 0) {
-            //                    mc.x = Math.trunc(mc.x + 1) + 0.05;
-            //                } else {
-            //                    mc.x = Math.trunc(mc.x) - 0.05;
-            //                }
-
-            if (collisions[Math.trunc(mc.x + tempOffset)] && collisions[Math.trunc(mc.x + tempOffset)][Math.trunc(mc.y)] && //if it exists
-                mc.x + mc.velx + mc.collisionWidth >= collisions[Math.trunc(mc.x + tempOffset)][Math.trunc(mc.y)][tempPartOfArray]) {
-
             }
         }
 
@@ -323,6 +340,7 @@ $(function () {
             ctx.fillText('vx: ' + Math.round(100 * mc.velx) / 100, 0, 120);
             ctx.fillText('vy: ' + Math.round(100 * mc.vely) / 100, 0, 140);
             ctx.fillText('onground: ' + mc.onGround, 0, 160);
+            ctx.fillText('facing: ' + mc.facing, 0, 180);
         }
     }
 
@@ -394,6 +412,7 @@ $(function () {
                 drawStage();
                 drawChar();
                 debugInfo();
+                updateFacing();
                 break;
             default:
                 break;
