@@ -126,85 +126,149 @@ $(function () {
     //Y8b  d8 88   88 88   88 88 `88. 88   88 Y8b  d8    88    88.     88 `88.      88      88   88    88    db   8D   .88.   Y8b  d8 db   8D 
     // `Y88P' YP   YP YP   YP 88   YD YP   YP  `Y88P'    YP    Y88888P 88   YD      88      YP   YP    YP    `8888Y' Y888888P  `Y88P' `8888Y' 
     function updateHorVel() { //TODO refactor sometime
-        if (keysDown[37] === true && keysDown[39] === undefined) { //left arrow & not right
-            if (absoluteValue(mc.velx, 2) < mc.runSpeed || mc.velx >= 0) { //if aboslute value is less than max vel or vel is in the opposite direction being pressed
-                switch (mc.onGround) {
-                    case true:
-                        if (absoluteValue(mc.velx) < mc.walkSpeed || absoluteValue(mc.velx) < mc.runSpeed && keysDown[16] === true) {
-                            mc.velx -= mc.accelx;
-                            mc.currentSprite = mc.idle[mc.facing]; //todo make actual walking / running sprites
-                        }
-                        break;
-                    default:
-                        if (absoluteValue(mc.velx) < mc.walkSpeed || absoluteValue(mc.velx) < mc.runSpeed && keysDown[16] === true) {
-                            mc.velx -= mc.airAccelx;
-                        }
-                        break; //TODO fix bug that causes you to keep moving after you release when you hit another key. seems to be affected by velocity.
-                        //todo also fix bug that allows you to clip through corners of boxes and when your feet are below a platform
+        var keys = 'none';
+        var modifier = 1;
+        var absoluteVel = absoluteValue(mc.velx);
+        var currentMax = mc.walkSpeed;
+        var currentAccel = mc.accelx;
+        var currentFriction = mc.friction;
+        if (37 in keysDown === true && 39 in keysDown === false) {
+            keys = 'left';
+        }
+
+        if (39 in keysDown === true && 37 in keysDown === false) {
+            keys = 'right';
+        }
+
+        if (16 in keysDown === true) {
+            currentMax = mc.runSpeed;
+        }
+
+        if (mc.facing === 0) {
+            modifier = -1;
+        }
+
+        if (mc.onGround === false) {
+            currentAccel = mc.airAccelx;
+            currentFriction = mc.airFriction;
+        }
+
+        if (keys === 'left' || keys === 'right') {
+            if (absoluteVel < currentMax || keys === 'left' && mc.velx > 1 || keys === 'right' && mc.velx < 1) {
+                if (absoluteVel + currentAccel > currentMax) {
+                    mc.velx = currentMax * modifier;
+                } else {
+                    mc.velx += currentAccel * modifier;
                 }
             }
-
-        }
-        if (keysDown[39] === true && keysDown[37] === undefined) { //right arrow & not left
-            if (absoluteValue(mc.velx, 2) < mc.runSpeed || mc.velx <= 0) { //if aboslute value is less than max vel or vel is in the opposite direction being pressed
-                switch (mc.onGround) {
-                    case true:
-                        if (absoluteValue(mc.velx) < mc.walkSpeed || absoluteValue(mc.velx) < mc.runSpeed && keysDown[16] === true) {
-                            mc.velx += mc.accelx;
-                            mc.currentSprite = mc.idle[mc.facing];
-                        }
+        } else {
+            if (mc.velx + currentFriction * modifier * -1 > 0) { //if velx will be larger than zero
+                switch (mc.facing) {
+                    case 0:
+                        mc.velx = 0;
                         break;
-                    default:
-                        if (absoluteValue(mc.velx) < mc.walkSpeed || absoluteValue(mc.velx) < mc.runSpeed && keysDown[16] === true) {
-                            mc.velx += mc.airAccelx;
-                        }
+                    case 1:
+                        mc.velx += currentFriction * modifier * -1;
+                        console.log('test');
                         break;
                 }
+
+            } else if (mc.velx + currentFriction * modifier * -1 < 0) { //if velx will be less than zero
+                switch (mc.facing) {
+                    case 1:
+                        mc.velx = 0;
+                        break;
+                    case 0:
+                        mc.velx += currentFriction * modifier * -1;
+                        console.log('test');
+                        break;
+                }
+
             }
-        }
-
-
-
-
-
-
-        if (keysDown[37] === undefined && keysDown[39] === undefined || keysDown[37] === true && keysDown[39] === true) { //neither left or right or both left and right, basically friction
-            switch (mc.onGround) {
-                case true:
-                    if (mc.velx > 0) { //if user is heading right
-                        if (mc.velx - mc.friction > 0) { //if velocity after friction isn't in the opposite direction
-                            mc.velx -= mc.friction;
-                        } else {
-                            mc.velx = 0;
-                        }
-                    } else if (mc.velx < 0) { //if user is heading left
-                        if (mc.velx + mc.friction < 0) { //velocity plus friction is not less than zero
-                            mc.velx += mc.friction;
-                        } else {
-                            mc.velx = 0;
-                        }
-                    }
-                    break;
-                default:
-                    if (mc.velx > 0) { //if user is heading right
-                        if (mc.velx - mc.airFriction > 0) { //if velocity after friction isn't in the opposite direction
-                            mc.velx -= mc.airFriction;
-                        } else {
-                            mc.velx = 0;
-                        }
-                    } else if (mc.velx < 0) { //if user is heading left
-                        if (mc.velx + mc.airFriction < 0) { //velocity plus friction is not less than zero
-                            mc.velx += mc.airFriction;
-                        } else {
-                            mc.velx = 0;
-                        }
-                    }
-                    break;
-            }
-        }
-        if (16 in keysDown === false && absoluteValue(mc.velx) > mc.walkSpeed + 0.1) {
 
         }
+
+
+        //        if (keysDown[37] === true && keysDown[39] === undefined) { //left arrow & not right
+        //            if (absoluteValue(mc.velx, 2) < mc.runSpeed || mc.velx >= 0) { //if aboslute value is less than max vel or vel is in the opposite direction being pressed
+        //                switch (mc.onGround) {
+        //                    case true:
+        //                        if (absoluteValue(mc.velx) < mc.walkSpeed || absoluteValue(mc.velx) < mc.runSpeed && keysDown[16] === true) {
+        //                            mc.velx -= mc.accelx;
+        //                            mc.currentSprite = mc.idle[mc.facing]; //todo make actual walking / running sprites
+        //                        }
+        //                        break;
+        //                    default:
+        //                        if (absoluteValue(mc.velx) < mc.walkSpeed || absoluteValue(mc.velx) < mc.runSpeed && keysDown[16] === true) {
+        //                            mc.velx -= mc.airAccelx;
+        //                        }
+        //                        break; //TODO fix bug that causes you to keep moving after you release when you hit another key. seems to be affected by velocity.
+        //                        //todo also fix bug that allows you to clip through corners of boxes and when your feet are below a platform
+        //                }
+        //            }
+        //
+        //        }
+        //        if (keysDown[39] === true && keysDown[37] === undefined) { //right arrow & not left
+        //            if (absoluteValue(mc.velx, 2) < mc.runSpeed || mc.velx <= 0) { //if aboslute value is less than max vel or vel is in the opposite direction being pressed
+        //                switch (mc.onGround) {
+        //                    case true:
+        //                        if (absoluteValue(mc.velx) < mc.walkSpeed || absoluteValue(mc.velx) < mc.runSpeed && keysDown[16] === true) {
+        //                            mc.velx += mc.accelx;
+        //                            mc.currentSprite = mc.idle[mc.facing];
+        //                        }
+        //                        break;
+        //                    default:
+        //                        if (absoluteValue(mc.velx) < mc.walkSpeed || absoluteValue(mc.velx) < mc.runSpeed && keysDown[16] === true) {
+        //                            mc.velx += mc.airAccelx;
+        //                        }
+        //                        break;
+        //                }
+        //            }
+        //        }
+        //
+        //
+        //
+        //
+        //
+        //
+        //        if (keysDown[37] === undefined && keysDown[39] === undefined || keysDown[37] === true && keysDown[39] === true) { //neither left or right or both left and right, basically friction
+        //            switch (mc.onGround) {
+        //                case true:
+        //                    if (mc.velx > 0) { //if user is heading right
+        //                        if (mc.velx - mc.friction > 0) { //if velocity after friction isn't in the opposite direction
+        //                            mc.velx -= mc.friction;
+        //                        } else {
+        //                            mc.velx = 0;
+        //                        }
+        //                    } else if (mc.velx < 0) { //if user is heading left
+        //                        if (mc.velx + mc.friction < 0) { //velocity plus friction is not less than zero
+        //                            mc.velx += mc.friction;
+        //                        } else {
+        //                            mc.velx = 0;
+        //                        }
+        //                    }
+        //                    break;
+        //                default:
+        //                    if (mc.velx > 0) { //if user is heading right
+        //                        if (mc.velx - mc.airFriction > 0) { //if velocity after friction isn't in the opposite direction
+        //                            mc.velx -= mc.airFriction;
+        //                        } else {
+        //                            mc.velx = 0;
+        //                        }
+        //                    } else if (mc.velx < 0) { //if user is heading left
+        //                        if (mc.velx + mc.airFriction < 0) { //velocity plus friction is not less than zero
+        //                            mc.velx += mc.airFriction;
+        //                        } else {
+        //                            mc.velx = 0;
+        //                        }
+        //                    }
+        //                    break;
+        //            }
+        //        }
+        //        if (16 in keysDown === false && absoluteValue(mc.velx) > mc.walkSpeed + 0.1) {
+        //
+        //        }
+
     }
 
     function updateVerVel() {
