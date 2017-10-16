@@ -266,7 +266,7 @@ $(function () {
                 case true: //left
                     if (collisions[Math.trunc(mc.x) - 1] && collisions[Math.trunc(mc.x) - 1][Math.trunc(mc.y)] && //if it exists
                         mc.x + mc.velx <= collisions[Math.trunc(mc.x) - 1][Math.trunc(mc.y)][1]) { // if pos of next frame is less than rightmost collision of block to left
-                        mc.x = Math.trunc(mc.x) + 0.05;
+                        mc.x = Math.trunc(mc.x);
                         mc.velx = 0;
                     } else {
                         mc.x += mc.velx;
@@ -274,9 +274,9 @@ $(function () {
                     }
                     break;
                 case false: //right
-                    if (collisions[Math.trunc(mc.x + 2)] && collisions[Math.trunc(mc.x + 2)][Math.trunc(mc.y)] && //if it exists
-                        mc.x + mc.velx + mc.width >= collisions[Math.trunc(mc.x + 2)][Math.trunc(mc.y)][0]) { // if pos of next frame is greater than
-                        mc.x = Math.trunc(mc.x + 1) - 0.05;
+                    if (collisions[Math.trunc(mc.x + 1.5)] && collisions[Math.trunc(mc.x + 1.5)][Math.trunc(mc.y)] && //if it exists
+                        mc.x + mc.velx + mc.width >= collisions[Math.trunc(mc.x + 1.5)][Math.trunc(mc.y)][0]) { // if pos of next frame is greater than
+                        mc.x = Math.trunc(mc.x + 0.5);
                         mc.velx = 0;
                     } else {
                         mc.x += mc.velx;
@@ -288,39 +288,28 @@ $(function () {
 
 
         //y
-        $.each(collisions[Math.trunc(mc.x)], function (index, val) { // val[3] is topmost hitbox, 2 is bottom
-            if (val[3]) { //if it exists
-                if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) { //if will be inside block underneath char on next frame
+        for (let i = 0; i < 2; i++) {
+            $.each(collisions[Math.trunc(mc.x) + i], function (index, val) {
+
+                if (mc.y + mc.vely / mc.jumpSpeed < val[3] && mc.onGround === false && mc.y > val[3] && mc.x + 1 !== val[0]) { //if y on next frame is less than top collision and y is  greater than top value.
                     mc.onGround = true;
                     mc.y = val[3];
                     mc.vely = 0;
                 }
-            }
-            if (mc.y + mc.height + mc.vely > val[2] && mc.y + mc.height < val[2]) {
-                mc.y = val[2] - mc.height;
-                mc.vely = 0;
 
-            }
-
-        });
-
-
-        $.each(collisions[Math.trunc(mc.x) + 1], function (index, val) {
-            if (val[3]) {
-                if (mc.y + mc.vely / 2 < val[3] && mc.onGround === false && mc.y > val[3]) {
-                    mc.onGround = true;
-                    mc.y = val[3];
-                    mc.vely = 0;
+                if (mc.y + mc.height + mc.vely / mc.jumpSpeed > val[2] && mc.y + mc.height <= val[2] && mc.x + 1 !== val[0]) { // if top of char on next frame will be greater than bottom collision.
+                    if (mc.y + 1 === val[2]) {
+                        mc.vely = 0;
+                        mc.onGround = true;
+                    } else {
+                        mc.y = val[2] - mc.height;
+                        mc.vely = 0;
+                    }
                 }
-            }
-            if (mc.y + mc.height + mc.vely > val[2] && mc.y + mc.height < val[2]) {
-                mc.y = val[2] - mc.height;
-                mc.vely = 0;
 
-            }
-        });
-
-        if (mc.onGround === false) {
+            });
+        }
+        if (mc.onGround === false) { //changes y by vel / 3. works because if mc hits a block, vel is set to 0
             mc.y += mc.vely / 3;
         }
 
