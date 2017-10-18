@@ -70,11 +70,11 @@ $(function () {
         vely: 1,
         onGround: false,
         accelx: 0.05,
-        airAccelx: 0.02,
+        airAccelx: 0.04,
         friction: 0.1,
         airFriction: 0.01,
         walkSpeed: 0.15,
-        runSpeed: 0.21,
+        runSpeed: 0.3,
         gravity: 0.1,
         fallSpeed: 1.75,
         fullHop: 1.6, //enough to jump around 5 blocks
@@ -142,8 +142,6 @@ $(function () {
             currentMaxSpeed = mc.runSpeed;
         }
         if (tempModifierValue === mc.facing || mc.velx === 0) {
-
-
             if (39 in keysDown !== 37 in keysDown) { //Whoever found this is a genius, works as a xor gate bc it is a bool
                 if (mc.velx === 0) {
                     switch (39 in keysDown) { //right arrow
@@ -174,7 +172,7 @@ $(function () {
                 }
             }
         } else if (mc.velx - currentFriction >= 0) {
-            mc.velx -= currentFriction;
+            mc.velx -= currentAccel;
         } else {
             mc.velx = 0;
         }
@@ -215,6 +213,8 @@ $(function () {
         if (39 in keysDown === true && 37 in keysDown === false) { //right arrow
             mc.facing = 1;
         }
+        if (mc.onGround === true)
+            mc.currentSprite = mc.idle[mc.facing];
     }
 
     function updatePos() {
