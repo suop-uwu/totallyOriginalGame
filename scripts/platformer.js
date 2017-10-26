@@ -8,7 +8,7 @@ $(function () {
     var ctx = canvas.getContext('2d');
     var blockSize;
     var keysDown = [];
-    var debugOverlay = false;
+    var debugOverlay = true;
     var temporaryValues = {
         debugOverlay: false
     };
@@ -64,7 +64,7 @@ $(function () {
         jumpsquat: [loadImage('img/sprites/zeeTee/jumpsquatL.png'), loadImage('img/sprites/zeeTee/jumpsquatR.png')],
         currentSprite: loadImage('img/sprites/zeeTee/idleR.png'),
         facing: 1, // 0 is left, 1 is right
-        x: 15,
+        x: 17.5,
         y: 10,
         velx: 0,
         vely: 1,
@@ -84,7 +84,8 @@ $(function () {
         collisionWidth: 0.9,
         width: 1,
         height: 1,
-        xModifier: 1
+        xModifier: 1,
+        state: 'idle'
     };
 
     window.onresize = resizeCanvas;
@@ -183,9 +184,9 @@ $(function () {
             32 in keysDown === true || //space
             90 in keysDown === true) { //z
             if (mc.onGround === true) { //jump part
-                mc.currentSprite = mc.jumpsquat[mc.facing];
+                mc.state = 'jumpsquat';
                 window.setTimeout(function () {
-                    mc.currentSprite = mc.idle[mc.facing]; //TODO replace with actual air sprite
+                    mc.state = 'air';
                     switch (38 in keysDown === true || //up
                         32 in keysDown === true || //space
                         90 in keysDown === true) { //z
@@ -213,8 +214,17 @@ $(function () {
         if (39 in keysDown === true && 37 in keysDown === false) { //right arrow
             mc.facing = 1;
         }
-        if (mc.onGround === true)
-            mc.currentSprite = mc.idle[mc.facing];
+    }
+
+    function updateSprite() {
+        switch (mc.state) {
+            case 'jumpsquat':
+                mc.currentSprite = mc.jumpsquat[mc.facing];
+                break; //TODO add air
+            default:
+                mc.currentSprite = mc.idle[mc.facing];
+                break;
+        }
     }
 
     function updatePos() {
@@ -268,6 +278,10 @@ $(function () {
                     mc.onGround = true;
                     mc.y = val[3];
                     mc.vely = 0;
+                    mc.state = 'landing';
+                    window.setTimeout(function () {
+                        mc.state = 'idle'; //TODO make these work
+                    }, (1000 / 60) * 6);
                 }
 
                 if (mc.y + mc.height + mc.vely / mc.jumpSpeed > val[2] && mc.y + mc.height <= val[2] && mc.x + 1 !== val[0]) { // if top of char on next frame will be greater than bottom collision.
@@ -289,36 +303,23 @@ $(function () {
     }
 
     function updateGroundState() { //supposed to detect when player walks off platform
-        var tempOnGround = false;
-        if (Array.isArray(collisions[Math.trunc(mc.x)]) === true) { //if first nested array exists
-            if (Array.isArray(collisions[Math.trunc(mc.x)][Math.trunc(mc.y) - 1]) === true) { //if second one exists
-                if (collisions[Math.trunc(mc.x)][Math.trunc(mc.y) - 1][3] === mc.y) {
-                    tempOnGround = true;
+        if (collisions[Math.round(mc.x)] !== undefined && collisions[Math.round(mc.x - 1)] !== undefined && collisions[Math.round(mc.x + 1)] !== undefined && //if it exists
+            Array.isArray(collisions[Math.round(mc.x)][Math.trunc(mc.y - 1)]) === false) { //or not an array
+            if (Math.round(mc.x) === Math.trunc(mc.x)) {
+                if (isWithin(mc.x + mc.velx * mc.xModifier, Math.round(mc.x), mc.velx) === true) {
+                    mc.x = Math.round(mc.x);
+                    mc.onGround = false;
+                    mc.velx = 0;
+                }
+            } else if (Math.round(mc.x) !== Math.trunc(mc.x)) {
+                if (isWithin(mc.x + mc.width + mc.velx * mc.xModifier, Math.round(mc.x + 1), mc.velx) === true) {
+                    mc.x = Math.round(mc.x);
+                    mc.onGround = false;
+                    mc.velx = 0;
                 }
             }
+
         }
-        if (Array.isArray(collisions[Math.trunc(mc.x + 1)]) === true) { //same as above
-            if (Array.isArray(collisions[Math.trunc(mc.x + 1)][Math.trunc(mc.y) - 1]) === true) { //saame
-                if (collisions[Math.trunc(mc.x + 1)][Math.trunc(mc.y) - 1][3] === mc.y) {
-                    tempOnGround = true;
-                }
-            }
-        }
-        if ([Math.trunc(mc.x)] in collisions) { //if the value exists. made to prevent errors
-            if (collisions[Math.trunc(mc.x)][mc.y - 1] === '  ' && collisions[Math.trunc(mc.x + 1)] !== '  ') { //if the block your truncated x is on is an empty string and in front isn't
-                if (isWithin(mc.x, Math.trunc(mc.x), 0.1)) {
-                    tempOnGround = false;
-                }
-            }
-        }
-        if ([Math.trunc(mc.x + 1)] in collisions) {
-            if (collisions[Math.trunc(mc.x + 1)][mc.y - 1] === '  ' && collisions[Math.trunc(mc.x)][mc.y - 1] !== '  ') { //same as above but opposite
-                if (isWithin(mc.x, Math.trunc(mc.x + 1), 0.1)) {
-                    tempOnGround = false;
-                }
-            }
-        }
-        mc.onGround = tempOnGround;
     }
 
     function debugInfo() {
@@ -344,6 +345,7 @@ $(function () {
             ctx.fillText('vy: ' + Math.round(100 * mc.vely) / 100, 0, 140);
             ctx.fillText('onground: ' + mc.onGround, 0, 160);
             ctx.fillText('facing: ' + mc.facing, 0, 180);
+            ctx.fillText('state: ' + mc.state, 0, 200);
         }
     }
 
@@ -406,14 +408,15 @@ $(function () {
         switch (mode) {
             case 'menu':
                 ctx.clearRect(0, 0, canvas.width, canvas.height + blockSize);
+                if (mc.onGround === true) {
+                    updateGroundState();
+                }
                 updateHorVel();
                 updateVerVel();
                 updatePos();
                 updateFacing();
-                if (mc.onGround === true) {
-                    updateGroundState();
-                }
                 drawStage();
+                updateSprite();
                 drawChar();
                 debugInfo();
                 break;
