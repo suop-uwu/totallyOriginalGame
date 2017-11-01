@@ -64,7 +64,7 @@ $(function () {
         jumpsquat: [loadImage('img/sprites/zeeTee/jumpsquatL.png'), loadImage('img/sprites/zeeTee/jumpsquatR.png')],
         currentSprite: loadImage('img/sprites/zeeTee/idleR.png'),
         facing: 1, // 0 is left, 1 is right
-        x: 15,
+        x: 17,
         y: 10,
         velx: 0,
         vely: 1,
@@ -228,108 +228,79 @@ $(function () {
     }
 
     function updatePos() {
-        var tempPartOfArray = 1;
-        var tempOffset = 0;
-        var tempOffset2 = -1;
-        var currentModdedVel = mc.velx * mc.xModifier;
-
-        //x
-        if (currentModdedVel > 0) { //is going right
-            tempPartOfArray = 0;
-            tempOffset = 1;
-            tempOffset2 = 2;
-        } else if (typeof currentModdedVel !== 'number') { //error message
-            console.log('horizontal velocity is invalid somehow. currently returns \'' + currentModdedVel + '\'');
+        /*if going right
+        current xdir is 1 else is -1
+        if going up
+        current ydir is 1 else is -1
+        
+        
+        y part
+        
+        repeat twice, one with current block and one with next
+        check if y plus yaccel is within current column[y + 1 * ydir][2.5 + ydir * 0.5]
+         if it is, velx = zero
+         if ydir is down onground = true
+         
+         
+        x part
+        repeat twice, one with current block and one with above
+        check if x plus xaccel * modifier is within collisions[round(x) + 1*xdir]
+        */
+        var currentModdedVelx = mc.velx * mc.xModifier;
+        var currentXdir = -1;
+        var currentYdir = -1;
+        var canMove = [false, false];
+        if (mc.xModifier === 1) {
+            currentXdir = 1;
         }
-        if (collisions[Math.trunc(mc.x) + tempOffset] && Array.isArray(collisions[Math.trunc(mc.x + tempOffset)][Math.trunc(mc.y)]) !== true && //if block 2 to right / left is not an array
-            collisions[Math.trunc(mc.x) + tempOffset2] && Array.isArray(collisions[Math.trunc(mc.x + tempOffset2)][Math.trunc(mc.y)]) !== true) { //if block to right / left is not an array
-            mc.x += currentModdedVel;
-        } else { //if it is
-            switch (tempOffset === 0) {
-                case true: //left
-                    if (collisions[Math.trunc(mc.x) - 1] && collisions[Math.trunc(mc.x) - 1][Math.trunc(mc.y)] && //if it exists
-                        mc.x + currentModdedVel <= collisions[Math.trunc(mc.x) - 1][Math.trunc(mc.y)][1]) { // if pos of next frame is less than rightmost collision of block to left
-                        mc.x = Math.trunc(mc.x);
-                        currentModdedVel = 0;
-                    } else {
-                        mc.x += currentModdedVel;
+        if (mc.vely > 0) {
+            currentYdir = 1;
+        }
 
-                    }
-                    break;
-                case false: //right
-                    if (collisions[Math.trunc(mc.x + 1.5)] && collisions[Math.trunc(mc.x + 1.5)][Math.trunc(mc.y)] && //if it exists
-                        mc.x + currentModdedVel + mc.width >= collisions[Math.trunc(mc.x + 1.5)][Math.trunc(mc.y)][0]) { // if pos of next frame is greater than
-                        mc.x = Math.trunc(mc.x + 0.5);
-                        currentModdedVel = 0;
-                    } else {
-                        mc.x += currentModdedVel;
-                    }
-                    break;
+        for (let i = 0; i < 2; i++) { //repeat twice
+            if (collisions[Math.trunc(mc.x + i)] !== undefined && collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 1 * currentYdir)] !== undefined && //if it exists
+                (mc.y + mc.vely / mc.jumpSpeed) + (0.5 + 0.5 * currentYdir) > collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 1 * currentYdir)][2] &&
+                (mc.y + mc.vely / mc.jumpSpeed) + (0.5 + 0.5 * currentYdir) < collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 1 * currentYdir)][3]
+            ) {
+                mc.vely = 0;
+                switch (currentYdir) {
+                    case -1:
+                        mc.onGround = true;
+                        if (Array.isArray(collisions[Math.trunc(mc.x + i)][Math.round(mc.y + 1 + 1 * currentYdir)]) === true)
+                            mc.y = collisions[Math.trunc(mc.x + i)][Math.round(mc.y + 1 + 1 * currentYdir)][3];
+                        break;
+                    case 1:
+                        mc.y = collisions[Math.trunc(mc.x + i)][Math.round(mc.y + 1 + 1 * currentYdir)][2] - 1;
+                        break;
+                }
+                break;
+            } else {
+                canMove[1] = true;
             }
         }
-
-
-
-        //y
-        for (let i = 0; i < 2; i++) {
-            $.each(collisions[Math.trunc(mc.x) + i], function (index, val) {
-
-                if (mc.y + mc.vely / mc.jumpSpeed < val[3] && mc.onGround === false && mc.y > val[3] && mc.x + 1 !== val[0]) { //if y on next frame is less than top collision and y is  greater than top value.
-                    mc.onGround = true;
-                    mc.y = val[3];
-                    mc.vely = 0;
-                    mc.state = 'landing';
-                    window.setTimeout(function () {
-                        mc.state = 'idle'; //TODO make these work
-                    }, (1000 / 60) * 6);
-                }
-
-                if (mc.y + mc.height + mc.vely / mc.jumpSpeed > val[2] && mc.y + mc.height <= val[2] && mc.x + 1 !== val[0]) { // if top of char on next frame will be greater than bottom collision.
-                    if (mc.y + 1 === val[2]) {
-                        mc.vely = 0;
-                        mc.onGround = true;
-                    } else {
-                        mc.y = val[2] - mc.height;
-                        mc.vely = 0;
-                    }
-                }
-
-            });
-        }
-        if (mc.onGround === false) { //changes y by vel / 3. works because if mc hits a block, vel is set to 0
-            mc.y += mc.vely / 3;
-        }
-
+        if (canMove[1] === true)
+            mc.y += mc.vely / mc.jumpSpeed;
     }
 
-    function updateGroundState() { //supposed to detect when player walks off platform
-        if (collisions[Math.round(mc.x)] !== undefined && //if it exists
-            collisions[Math.round(mc.x)][Math.trunc(mc.y - 1)] === undefined || //if block under is undefined
-            Array.isArray(collisions[Math.round(mc.x)][Math.trunc(mc.y - 1)]) === false) { //or not an array
-            mc.onGround = false;
-        } //Todo make system better, rn you fall through the sides of blocks if your x rounds to the one you aren't standing on that is air.
 
-        //        if (Array.isArray(collisions[Math.trunc(mc.x + 1)]) === true) { //same as above
-        //            if (Array.isArray(collisions[Math.trunc(mc.x + 1)][Math.trunc(mc.y) - 1]) === true) { //saame
-        //                if (collisions[Math.trunc(mc.x + 1)][Math.trunc(mc.y) - 1][3] === mc.y) {
-        //                    tempOnGround = true;
-        //                }
-        //            }
-        //        }
-        //        if ([Math.trunc(mc.x)] in collisions) { //if the value exists. made to prevent errors
-        //            if (collisions[Math.trunc(mc.x)][mc.y - 1] === '  ' && collisions[Math.trunc(mc.x + 1)] !== '  ') { //if the block your truncated x is on is an empty string and in front isn't
-        //                if (isWithin(mc.x, Math.trunc(mc.x), 0.1)) {
-        //                    tempOnGround = false;
-        //                }
-        //            }
-        //        }
-        //        if ([Math.trunc(mc.x + 1)] in collisions) {
-        //            if (collisions[Math.trunc(mc.x + 1)][mc.y - 1] === '  ' && collisions[Math.trunc(mc.x)][mc.y - 1] !== '  ') { //same as above but opposite
-        //                if (isWithin(mc.x, Math.trunc(mc.x + 1), 0.1)) {
-        //                    tempOnGround = false;
-        //                }
-        //            }
-        //        }
+    function updateGroundState() { //supposed to detect when player walks off platform
+        if (collisions[Math.round(mc.x)] !== undefined && collisions[Math.round(mc.x - 1)] !== undefined && collisions[Math.round(mc.x + 1)] !== undefined && //if it exists
+            Array.isArray(collisions[Math.round(mc.x)][Math.trunc(mc.y - 1)]) === false) { //or not an array
+            if (Math.round(mc.x) === Math.trunc(mc.x)) {
+                if (isWithin(mc.x + mc.velx * mc.xModifier, Math.round(mc.x), mc.velx) === true) {
+                    mc.x = Math.round(mc.x);
+                    mc.onGround = false;
+                    mc.velx = 0;
+                }
+            } else if (Math.round(mc.x) !== Math.trunc(mc.x)) {
+                if (isWithin(mc.x + mc.width + mc.velx * mc.xModifier, Math.round(mc.x + 1), mc.velx) === true) {
+                    mc.x = Math.round(mc.x);
+                    mc.onGround = false;
+                    mc.velx = 0;
+                }
+            }
+
+        }
     }
 
     function debugInfo() {
@@ -418,13 +389,13 @@ $(function () {
         switch (mode) {
             case 'menu':
                 ctx.clearRect(0, 0, canvas.width, canvas.height + blockSize);
+                if (mc.onGround === true) {
+                    updateGroundState();
+                }
                 updateHorVel();
                 updateVerVel();
                 updatePos();
                 updateFacing();
-                if (mc.onGround === true) {
-                    updateGroundState();
-                }
                 drawStage();
                 updateSprite();
                 drawChar();
