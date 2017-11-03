@@ -235,7 +235,6 @@ $(function () {
         
         
         y part
-        
         repeat twice, one with current block and one with next
         check if y plus yaccel is within current column[y + 1 * ydir][2.5 + ydir * 0.5]
          if it is, velx = zero
@@ -250,22 +249,23 @@ $(function () {
         var currentXdir = -1;
         var currentYdir = -1;
         var canMove = [false, false];
-        if (mc.xModifier === 1) {
+        if (currentModdedVelx > 0)
             currentXdir = 1;
-        }
-        if (mc.vely > 0) {
+        if (mc.vely > 0)
             currentYdir = 1;
-        }
 
+
+        //y part
         for (let i = 0; i < 2; i++) { //repeat twice
             if (collisions[Math.trunc(mc.x + i)] !== undefined && collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 1 * currentYdir)] !== undefined && //if it exists
-                (mc.y + mc.vely / mc.jumpSpeed) + (0.5 + 0.5 * currentYdir) > collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 1 * currentYdir)][2] && //correct side will be above bottom
-                (mc.y + mc.vely / mc.jumpSpeed) + (0.5 + 0.5 * currentYdir) < collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 1 * currentYdir)][3] //correct side will be below top
+                (mc.y + mc.vely / mc.jumpSpeed) + (0.5 + 0.5 * currentYdir) > collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 2 * currentYdir)][2] && //correct side will be above bottom
+                (mc.y + mc.vely / mc.jumpSpeed) + (0.5 + 0.5 * currentYdir) < collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 2 * currentYdir)][3] //correct side will be below top
             ) {
                 mc.vely = 0;
                 switch (currentYdir) {
                     case -1:
                         mc.onGround = true;
+
                         //if you ever make half height platforms, fix this
                         mc.y = Math.round(mc.y);
                         break;
@@ -278,8 +278,26 @@ $(function () {
                 canMove[1] = true;
             }
         }
+
+
+        for (let i = 0; i < 2; i++) { //repeat twice
+            if (collisions[Math.trunc(mc.x + i)] !== undefined && Array.isArray(collisions[Math.trunc(mc.x + 0.5 + (1.5 - (0.005 + 0.005 * currentXdir)))][Math.trunc(mc.y + i)]) === true && Array.isArray(collisions[Math.trunc(mc.x + 0.5 + (1.5 - (0.005 + 0.005 * currentXdir)))][Math.trunc(mc.y + i)]) === true && //if it exists
+                (mc.x + currentModdedVelx) + (0.5 + 0.5 * currentYdir) > collisions[Math.trunc(mc.x + 0.5 + (1.5 - (0.005 + 0.005 * currentXdir)))][Math.trunc(mc.y + i)][0] && //correct side will be above bottom
+                (mc.x + currentModdedVelx) + (0.5 + 0.5 * currentYdir) < collisions[Math.trunc(mc.x + 0.5 + (1.5 - (0.005 + 0.005 * currentXdir)))][Math.trunc(mc.y + i)][1] //correct side will be below top
+            ) {
+                mc.velx = 0;
+                mc.x = Math.trunc(mc.x);
+                break;
+            } else {
+                canMove[0] = true;
+            }
+        }
+
+        if (canMove[0] === true)
+            mc.x += currentModdedVelx;
         if (canMove[1] === true)
             mc.y += mc.vely / mc.jumpSpeed;
+
     }
 
 
