@@ -259,18 +259,18 @@ $(function () {
 
         for (let i = 0; i < 2; i++) { //repeat twice
             if (collisions[Math.trunc(mc.x + i)] !== undefined && collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 1 * currentYdir)] !== undefined && //if it exists
-                (mc.y + mc.vely / mc.jumpSpeed) + (0.5 + 0.5 * currentYdir) > collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 1 * currentYdir)][2] &&
-                (mc.y + mc.vely / mc.jumpSpeed) + (0.5 + 0.5 * currentYdir) < collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 1 * currentYdir)][3]
+                (mc.y + mc.vely / mc.jumpSpeed) + (0.5 + 0.5 * currentYdir) > collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 1 * currentYdir)][2] && //correct side will be above bottom
+                (mc.y + mc.vely / mc.jumpSpeed) + (0.5 + 0.5 * currentYdir) < collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 1 * currentYdir)][3] //correct side will be below top
             ) {
                 mc.vely = 0;
                 switch (currentYdir) {
                     case -1:
                         mc.onGround = true;
-                        if (Array.isArray(collisions[Math.trunc(mc.x + i)][Math.round(mc.y + 1 + 1 * currentYdir)]) === true)
-                            mc.y = collisions[Math.trunc(mc.x + i)][Math.round(mc.y + 1 + 1 * currentYdir)][3];
+                        //if you ever make half height platforms, fix this
+                        mc.y = Math.round(mc.y);
                         break;
                     case 1:
-                        mc.y = collisions[Math.trunc(mc.x + i)][Math.round(mc.y + 1 + 1 * currentYdir)][2] - 1;
+                        mc.y = Math.round(mc.y);
                         break;
                 }
                 break;
