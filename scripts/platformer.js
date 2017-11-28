@@ -72,7 +72,7 @@ $(function () {
         accelx: 0.05,
         airAccelx: 0.04,
         friction: 0.1,
-        airFriction: 0.01,
+        airFriction: 0.05,
         walkSpeed: 0.15,
         runSpeed: 0.3,
         gravity: 0.1,
@@ -302,6 +302,30 @@ $(function () {
     function doColisionThingies() {
         //put collision detecting stuff here.
         //you already have position updating stuff
+
+        for (let i = 0; i < 2; i++) { //repeat twice
+            if (collisions[Math.trunc(mc.x + i)] !== undefined) { //if it-
+                if (collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y)] !== undefined) { //- exists
+                    var collision = collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y)]; //for ease of access
+                    for (let i2 = 0; i2 < 2; i2++) {
+                        console.log(i2);
+                        if (mc.y + i2 <= collision[3] && mc.y + i2 >= collision[2]) { //if bottom of char is within block in terms of y
+                            mc.vely = 0;
+                            switch (i2) {
+                                case 1:
+                                    mc.y = collision[2] - 1;
+                                    break;
+                                default:
+                                    mc.y = collision[3];
+                                    mc.onGround = true;
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (let i = 0; i < 2; i++) {}
     }
 
     function updateGroundState() { //supposed to detect when player walks off platform
@@ -348,6 +372,16 @@ $(function () {
             ctx.fillText('onground: ' + mc.onGround, 0, 160);
             ctx.fillText('facing: ' + mc.facing, 0, 180);
             ctx.fillText('state: ' + mc.state, 0, 200);
+            //debug grid
+            for (let i = 0; i < 30; i++) {
+                for (let j = 0; j < Math.round(canvas.height / blockSize); j++) {
+                    ctx.strokeStyle = "#000";
+                    ctx.beginPath();
+                    ctx.rect(i * blockSize, canvas.height - j * blockSize, blockSize, blockSize);
+                    ctx.stroke();
+                }
+
+            }
         }
     }
 
