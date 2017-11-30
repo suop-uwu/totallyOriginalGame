@@ -49,13 +49,18 @@ $(function () {
     }
 
     //compares to see if num1 and 2 are within range of each other. returns true or false
-    function isWithin(num1, num2, range) {
-        if (Math.sqrt(Math.pow(num1 - num2, 2)) < range) {
+    function isWithin(num, range1, range2) {
+        if (num >= range1 && num <= range2) {
             return true;
         } else {
             return false;
         }
     }
+
+    function delay(code, timeMs) {
+        window.setInterval(code(), timeMs);
+    }
+
     var blocks = {
         basic: loadImage('img/sprites/blocks/basic.png')
     };
@@ -76,7 +81,7 @@ $(function () {
         walkSpeed: 0.15,
         runSpeed: 0.3,
         gravity: 0.1,
-        fallSpeed: 1.75,
+        fallSpeed: 4,
         fullHop: 1.6, //enough to jump around 5 blocks
         shortHop: 0.8,
         jumpsquatDuration: 4, //in frames
@@ -97,6 +102,7 @@ $(function () {
         return temp;
     }
 
+    //keyhandler
     $(document).keydown(function (event, char) {
         char = event.which; //identify what char was pressed
         keysDown[event.keyCode] = true;
@@ -227,24 +233,7 @@ $(function () {
         }
     }
 
-    function updatePos() {
-        /*if going right
-        current xdir is 1 else is -1
-        if going up
-        current ydir is 1 else is -1
-        
-        
-        y part
-        repeat twice, one with current block and one with next
-        check if y plus yaccel is within current column[y + 1 * ydir][2.5 + ydir * 0.5]
-         if it is, velx = zero
-         if ydir is down onground = true
-         
-         
-        x part
-        repeat twice, one with current block and one with above
-        check if x plus xaccel * modifier is within collisions[round(x) + 1*xdir]
-        */
+    function updatePos() { //TODO clean up
         var currentModdedVelx = mc.velx * mc.xModifier;
         var currentXdir = -1;
         var currentYdir = -1;
@@ -252,81 +241,47 @@ $(function () {
             currentXdir = 1;
         if (mc.vely > 0)
             currentYdir = 1;
-
-
-        //y part
-        //        for (let i = 0; i < 2; i++) { //repeat twice
-        //            if (collisions[Math.trunc(mc.x + i)] !== undefined && collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 1 * currentYdir)] !== undefined && //if it exists
-        //                (mc.y + mc.vely / mc.jumpSpeed) + (0.5 + 0.5 * currentYdir) > collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 2 * currentYdir)][2] && //correct side will be above bottom
-        //                (mc.y + mc.vely / mc.jumpSpeed) + (0.5 + 0.5 * currentYdir) < collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y + 1 + 2 * currentYdir)][3] //correct side will be below top
-        //            ) {
-        //                mc.vely = 0;
-        //                switch (currentYdir) {
-        //                    case -1:
-        //                        mc.onGround = true;
-        //
-        //                        //if you ever make half height platforms, fix this
-        //                        mc.y = Math.round(mc.y);
-        //                        break;
-        //                    case 1:
-        //                        mc.y = Math.round(mc.y);
-        //                        break;
-        //                }
-        //                break;
-        //            } else {
-        //                canMove[1] = true;
-        //            }
-        //        }
-        //
-        //
-        //        for (let i = 0; i < 2; i++) { //repeat twice
-        //            if (collisions[Math.trunc(mc.x + i)] !== undefined && Array.isArray(collisions[Math.trunc(mc.x + 0.5 + (1.5 - (0.005 + 0.005 * currentXdir)))][Math.trunc(mc.y + i)]) === true && Array.isArray(collisions[Math.trunc(mc.x + 0.5 + (1.5 - (0.005 + 0.005 * currentXdir)))][Math.trunc(mc.y + i)]) === true && //if it exists
-        //                (mc.x + currentModdedVelx) + (0.5 + 0.5 * currentYdir) > collisions[Math.trunc(mc.x + 0.5 + (1.5 - (0.005 + 0.005 * currentXdir)))][Math.trunc(mc.y + i)][0] && //correct side will be above bottom
-        //                (mc.x + currentModdedVelx) + (0.5 + 0.5 * currentYdir) < collisions[Math.trunc(mc.x + 0.5 + (1.5 - (0.005 + 0.005 * currentXdir)))][Math.trunc(mc.y + i)][1] //correct side will be below top
-        //            ) {
-        //                mc.velx = 0;
-        //                mc.x = Math.trunc(mc.x);
-        //                break;
-        //            } else {
-        //                canMove[0] = true;
-        //            }
-        //        }
-
-        //        if (canMove[0] === true)
         mc.x += currentModdedVelx;
-        //        if (canMove[1] === true)
         mc.y += mc.vely / mc.jumpSpeed;
 
     }
 
     function doColisionThingies() {
-        //put collision detecting stuff here.
-        //you already have position updating stuff
-
+        //vertical collisions
         for (let i = 0; i < 2; i++) { //repeat twice
-            if (collisions[Math.trunc(mc.x + i)] !== undefined) { //if it-
-                if (collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y)] !== undefined) { //- exists
-                    var collision = collisions[Math.trunc(mc.x + i)][Math.trunc(mc.y)]; //for ease of access
-                    for (let i2 = 0; i2 < 2; i2++) {
-                        console.log(i2);
-                        if (mc.y + i2 <= collision[3] && mc.y + i2 >= collision[2]) { //if bottom of char is within block in terms of y
-                            mc.vely = 0;
-                            switch (i2) {
-                                case 1:
-                                    mc.y = collision[2] - 1;
-                                    break;
-                                default:
-                                    mc.y = collision[3];
-                                    mc.onGround = true;
-                                    break;
-                            }
+            for (let i2 = 0; i2 < 2; i2++) {
+                if (collisions[Math.trunc(mc.x + i * mc.width)] !== undefined && collisions[Math.trunc(mc.x + i * mc.width)][Math.trunc(mc.y + i2 * mc.height)] !== undefined) { //if it exists
+                    var collision = collisions[Math.trunc(mc.x + i * mc.width)][Math.trunc(mc.y + i2 * mc.height)]; //for ease of access
+                    if (mc.y + i2 * mc.height <= collision[3] && mc.y + i2 * mc.height >= collision[2]) { //if bottom of char is within block in terms of y
+                        mc.vely = 0;
+                        switch (i2) {
+                            case 1: //if it is detecting top hitbox
+                                mc.y = collision[2] - 1;
+                                break;
+                            case 0: //bottom hitbox
+                                mc.y = collision[3];
+                                mc.onGround = true;
+                                mc.state = "idle";
+                                break;
                         }
                     }
                 }
             }
         }
-        for (let i = 0; i < 2; i++) {}
+        //horizontal collisions
+        for (let i = 0; i < 2; i++) {
+            for (let i2 = 0; i < 2; i++) {
+                if (collisions[Math.trunc(mc.x + i * mc.width)] !== undefined && collisions[Math.trunc(mc.x + i * mc.width)][mc.y + i2 * mc.width] !== undefined) {
+                    var collision = collisions[Math.trunc(mc.x + i * mc.width)][mc.y + i2 * mc.width];
+                    console.log('arewithin');
+                    if (isWithin(mc.x + i * mc.width, collision[0], collision[2])) {
+                        mc.x = Math.round(mc.x);
+                    }
+                }
+            }
+        }
     }
+
 
     function updateGroundState() { //supposed to detect when player walks off platform
         if (collisions[Math.round(mc.x)] !== undefined && collisions[Math.round(mc.x - 1)] !== undefined && collisions[Math.round(mc.x + 1)] !== undefined && //if it exists
@@ -374,7 +329,7 @@ $(function () {
             ctx.fillText('state: ' + mc.state, 0, 200);
             //debug grid
             for (let i = 0; i < 30; i++) {
-                for (let j = 0; j < Math.round(canvas.height / blockSize); j++) {
+                for (let j = 0; j < Math.round(canvas.height / blockSize) + 1; j++) {
                     ctx.strokeStyle = "#000";
                     ctx.beginPath();
                     ctx.rect(i * blockSize, canvas.height - j * blockSize, blockSize, blockSize);
@@ -444,13 +399,13 @@ $(function () {
         switch (mode) {
             case 'menu':
                 ctx.clearRect(0, 0, canvas.width, canvas.height + blockSize);
-                if (mc.onGround === true) {
-                    updateGroundState();
-                }
                 updateHorVel();
                 updateVerVel();
                 updatePos();
                 doColisionThingies();
+                if (mc.onGround === true) {
+                    updateGroundState();
+                }
                 updateFacing();
                 drawStage();
                 updateSprite();
