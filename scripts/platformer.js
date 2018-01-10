@@ -207,8 +207,7 @@ $(function () {
                 }, 1000 / 60 * mc.jumpsquatDuration); // four frame jumpsquat
             }
         }
-        if (mc.onGround === false && //gravity part
-            mc.vely > mc.fallSpeed * -1) {
+        if (mc.vely > mc.fallSpeed * -1) {
             mc.vely -= mc.gravity;
         }
     }
@@ -404,9 +403,9 @@ $(function () {
                 updateVerVel();
                 updatePos();
                 doColisionThingies();
-                if (mc.onGround === true) {
-                    updateGroundState();
-                }
+                //if (mc.onGround === true) {
+                    //updateGroundState();
+                //}
                 updateFacing();
                 drawStage();
                 updateSprite();
