@@ -88,7 +88,7 @@ $(function () {
         jumpSpeed: 3, //higher means slower jump
         collisionWidth: 0.9,
         width: 0.8,
-        height: 1,
+        height: 0.8,
         xModifier: 1,
         state: 'idle'
     };
