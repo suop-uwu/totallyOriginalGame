@@ -87,7 +87,7 @@ $(function () {
         jumpsquatDuration: 4, //in frames
         jumpSpeed: 3, //higher means slower jump
         collisionWidth: 0.9,
-        width: 1,
+        width: 0.8,
         height: 1,
         xModifier: 1,
         state: 'idle'
