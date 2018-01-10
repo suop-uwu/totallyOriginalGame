@@ -86,9 +86,9 @@ $(function () {
         shortHop: 0.8,
         jumpsquatDuration: 4, //in frames
         jumpSpeed: 3, //higher means slower jump
-        collisionWidth: 0.9,
+        displayWidth: 1,
         width: 0.8,
-        height: 0.8,
+        height: 1,
         xModifier: 1,
         state: 'idle'
     };
@@ -120,7 +120,7 @@ $(function () {
     ctx.font = '20px Ubuntu Mono';
 
     function drawChar() {
-        ctx.drawImage(mc.currentSprite, mc.x * blockSize, canvas.height - mc.y * blockSize, blockSize * mc.width, blockSize * mc.height);
+        ctx.drawImage(mc.currentSprite, mc.x * blockSize, canvas.height - mc.y * blockSize, blockSize * mc.displayWidth, blockSize * mc.height);
     }
 
     function absoluteValue(number) {
