@@ -88,17 +88,17 @@ $(function () {
         x: 17
         , y: 10
         , velx: 0
-        , vely: 1
+        , vely: 5
         , onGround: false
-        , accelx: 0.05
+        , accelx: 0.05//TODO fix friction so that it applies when moving left. tbh idk how that even happened.
         , airAccelx: 0.04
-        , friction: 0.05
-        , airFriction: 0.02
+        , friction: 0.02
+        , airFriction: 0.005
         , walkSpeed: 0.15
         , runSpeed: 0.3
         , gravity: 0.1
         , fallSpeed: 4
-        , fullHop: 1.6, //enough to jump around 5 blocks
+        , fullHop: 2, //enough to jump around 5 blocks
         shortHop: 0.8
         , jumpsquatDuration: 3, //in frames
         jumpSpeed: 3
