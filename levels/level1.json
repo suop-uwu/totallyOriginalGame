@@ -1,41 +1,50 @@
-[
-    ["   ", "blk", "   ", "   ", "   ", "   ", "   ", "   ", "   "],
-    ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"],
-    ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"],
-    ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"],
-    ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"],
-    ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"],
-    ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"],
-    ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"],
-    ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"],
-    ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"],
-    ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"],
-    ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"],
-    ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"],
-    ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"],
-    ["blk", "blk", "blk"],
-    ["blk", "   ", "blk"],
-    ["blk", "blk", "blk"],
-    ["blk", "blk"],
-    ["blk", "   "],
-    ["blk", "   "],
-    ["blk", "blk"],
-    ["blk", "blk", "blk", "blk", "blk"],
-    ["blk", "blk"],
-    ["blk", "blk", "   ", "   ", "blk"],
-    ["  "],
-    ["blk", "blk", "   ", "   ", "   ", "   ", "bsc", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc"],
-    ["blk", "   ", "   ", "   ", "   ", "   ", "bsc", "bsc", "   ", "   ", "   ", "   "],
-    ["  "],
-    ["blk", "blk"],
-    ["blk", "blk"],
-    ["blk", "blk"],
-    ["blk", "blk"],
-    ["blk", "blk"],
-    ["   ", "   "],
-    ["   ", "   "],
-    ["   ", "   "],
-    ["blk", "blk"],
-    ["blk", "blk"],
-    ["blk", "blk", "   ", "blk", "blk", "blk", "blk", "blk", "bsc", "blk", "bsc", "   ", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk"]
+{
+    "blocks": {
+        "blk": {}
+        , "bsc": {}
+        , "   ": {
+            "collision": false
+        }
+    }
+    , "stage": [
+    ["   ", "blk", "   ", "   ", "   ", "   ", "   ", "   ", "   "]
+    , ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"]
+    , ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"]
+    , ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk"]
+    , ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"]
+    , ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"]
+    , ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"]
+    , ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"]
+    , ["blk", "blk", "   ", "   ", "   ", "   ", "   ", "   ", "blk"]
+    , ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"]
+    , ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"]
+    , ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"]
+    , ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"]
+    , ["blk", "blk", "   ", "blk", "   ", "   ", "   ", "   ", "blk"]
+    , ["blk", "blk", "blk"]
+    , ["blk", "   ", "blk"]
+    , ["blk", "blk", "blk"]
+    , ["blk", "blk"]
+    , ["blk", "   "]
+    , ["blk", "   "]
+    , ["blk", "blk"]
+    , ["blk", "blk", "blk", "blk", "blk"]
+    , ["blk", "blk"]
+    , ["blk", "blk", "   ", "   ", "blk"]
+    , ["   "]
+    , ["blk", "blk", "   ", "   ", "   ", "   ", "bsc", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc", "   ", "   ", "   ", "   ", "bsc"]
+    , ["blk", "   ", "   ", "   ", "   ", "   ", "bsc", "bsc", "   ", "   ", "   ", "   "]
+    , ["   "]
+    , ["blk", "blk"]
+    , ["blk", "blk"]
+    , ["blk", "blk"]
+    , ["blk", "blk"]
+    , ["blk", "blk"]
+    , ["   ", "   "]
+    , ["   ", "   "]
+    , ["   ", "   "]
+    , ["blk", "blk"]
+    , ["blk", "blk"]
+    , ["blk", "blk", "   ", "blk", "blk", "blk", "blk", "blk", "bsc", "blk", "bsc", "   ", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk", "blk"]
 ]
+}

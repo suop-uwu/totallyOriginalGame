@@ -47,52 +47,74 @@ $(function () {
         }
         return "";
     }
-
     //compares to see if num1 and 2 are within range of each other. returns true or false
     function isWithin(num, range1, range2) {
-        if (num >= range1 && num <= range2) {
+        if (num > range1 && num < range2 || num < range1 && num > range2) {
             return true;
-        } else {
+        }
+        else {
             return false;
         }
+    }
+
+    function insideBlock(objectOne, objectTwo) {
+        var xin = false;
+        var yin = false;
+        if (isWithin(objectOne.x[0], objectTwo.x[0], objectTwo.x[1]) || isWithin(objectOne.x[1], objectTwo.x[0], objectTwo.x[1]) || isWithin(objectTwo.x[0], objectOne.x[0], objectOne.x[1]) || isWithin(objectTwo.x[1], objectOne.x[0], objectOne.x[1])) {
+            xin = true;
+        }
+        if (isWithin(objectOne.y[0], objectTwo.y[0], objectTwo.y[1]) || isWithin(objectOne.y[1], objectTwo.y[0], objectTwo.y[1]) || isWithin(objectTwo.y[0], objectOne.y[0], objectOne.y[1]) || isWithin(objectTwo.y[1], objectOne.y[0], objectOne.y[1])) {
+            yin = true;
+        }
+        return {
+            'x': xin
+            , 'y': yin
+        };
     }
 
     function delay(code, timeMs) {
         window.setInterval(code(), timeMs);
     }
-
     var blocks = {
         basic: loadImage('img/sprites/blocks/basic.png')
     };
+    var sprites = {
+        idle: [loadImage('img/sprites/zeeTee/idleL.png'), loadImage('img/sprites/zeeTee/idleR.png')]
+        , jumpsquat: [loadImage('img/sprites/zeeTee/jumpsquatL.png'), loadImage('img/sprites/zeeTee/jumpsquatR.png')]
+        , currentSprite: loadImage('img/sprites/zeeTee/idleR.png')
+    }
     var mc = { //all the info on the mc
-        idle: [loadImage('img/sprites/zeeTee/idleL.png'), loadImage('img/sprites/zeeTee/idleR.png')],
-        jumpsquat: [loadImage('img/sprites/zeeTee/jumpsquatL.png'), loadImage('img/sprites/zeeTee/jumpsquatR.png')],
-        currentSprite: loadImage('img/sprites/zeeTee/idleR.png'),
         facing: 1, // 0 is left, 1 is right
-        x: 17,
-        y: 10,
-        velx: 0,
-        vely: 1,
-        onGround: false,
-        accelx: 0.05,
-        airAccelx: 0.04,
-        friction: 0.1,
-        airFriction: 0.05,
-        walkSpeed: 0.15,
-        runSpeed: 0.3,
-        gravity: 0.1,
-        fallSpeed: 4,
-        fullHop: 1.6, //enough to jump around 5 blocks
-        shortHop: 0.8,
-        jumpsquatDuration: 4, //in frames
-        jumpSpeed: 3, //higher means slower jump
-        displayWidth: 1,
-        width: 0.8,
-        height: 1,
-        xModifier: 1,
-        state: 'idle'
+        x: 17
+        , y: 10
+        , velx: 0
+        , vely: 1
+        , onGround: false
+        , accelx: 0.05
+        , airAccelx: 0.04
+        , friction: 0.05
+        , airFriction: 0.02
+        , walkSpeed: 0.15
+        , runSpeed: 0.3
+        , gravity: 0.1
+        , fallSpeed: 4
+        , fullHop: 1.6, //enough to jump around 5 blocks
+        shortHop: 0.8
+        , jumpsquatDuration: 3, //in frames
+        jumpSpeed: 3
+        , displayWidth: 1
+        , width: 0.8
+        , height: 1
+        , state: 'idle'
     };
-
+    var controls = {
+        left: 65
+        , right: 68
+        , down: 83
+        , up: 87
+        , sprint: 16
+        , jump: 32
+    };
     window.onresize = resizeCanvas;
     resizeCanvas();
 
@@ -102,6 +124,9 @@ $(function () {
         return temp;
     }
 
+    function absoluteValue(number) {
+        return Math.sqrt(number * number);
+    }
     //keyhandler
     $(document).keydown(function (event, char) {
         char = event.which; //identify what char was pressed
@@ -112,7 +137,6 @@ $(function () {
         delete keysDown[event.keyCode];
     });
     var mode = 'menu';
-
     ctx.mozImageSmoothingEnabled = false;
     ctx.webkitImageSmoothingEnabled = false;
     ctx.msImageSmoothingEnabled = false;
@@ -120,24 +144,14 @@ $(function () {
     ctx.font = '20px Ubuntu Mono';
 
     function drawChar() {
-        ctx.drawImage(mc.currentSprite, mc.x * blockSize, canvas.height - mc.y * blockSize, blockSize * mc.displayWidth, blockSize * mc.height);
+        ctx.drawImage(mc.currentSprite, (mc.x * blockSize) - ((blockSize * mc.width) / 2), canvas.height - mc.y * blockSize, blockSize * mc.displayWidth, blockSize * mc.height);
     }
 
     function absoluteValue(number) {
         return Math.sqrt(Math.pow(number, 2));
     }
 
-    // .o88b. db   db  .d8b.  d8888b.  .d8b.   .o88b. d888888b d88888b d8888b.      d8888b. db   db db    db .d8888. d888888b  .o88b. .d8888. 
-    //d8P  Y8 88   88 d8' `8b 88  `8D d8' `8b d8P  Y8 `~~88~~' 88'     88  `8D      88  `8D 88   88 `8b  d8' 88'  YP   `88'   d8P  Y8 88'  YP 
-    //8P      88ooo88 88ooo88 88oobY' 88ooo88 8P         88    88ooooo 88oobY'      88oodD' 88ooo88  `8bd8'  `8bo.      88    8P      `8bo.   
-    //8b      88~~~88 88~~~88 88`8b   88~~~88 8b         88    88~~~~~ 88`8b        88~~~   88~~~88    88      `Y8b.    88    8b        `Y8b. 
-    //Y8b  d8 88   88 88   88 88 `88. 88   88 Y8b  d8    88    88.     88 `88.      88      88   88    88    db   8D   .88.   Y8b  d8 db   8D 
-    // `Y88P' YP   YP YP   YP 88   YD YP   YP  `Y88P'    YP    Y88888P 88   YD      88      YP   YP    YP    `8888Y' Y888888P  `Y88P' `8888Y' 
-    function updateHorVel() { //TODO refactor sometime
-        var tempModifierValue = 1;
-        if (mc.xModifier === -1) {
-            tempModifierValue = 0;
-        }
+    function leftRightControls() {
         var currentAccel = mc.airAccelx;
         var currentMaxSpeed = mc.walkSpeed;
         var currentFriction = mc.airFriction;
@@ -145,50 +159,44 @@ $(function () {
             currentFriction = mc.friction;
             currentAccel = mc.accelx;
         }
-        if (16 in keysDown === true) {
+        if (controls.sprint in keysDown === true) {
             currentMaxSpeed = mc.runSpeed;
         }
-        if (tempModifierValue === mc.facing || mc.velx === 0) {
-            if (39 in keysDown !== 37 in keysDown) { //Whoever found this is a genius, works as a xor gate bc it is a bool
-                if (mc.velx === 0) {
-                    switch (39 in keysDown) { //right arrow
-                        case true:
-                            mc.xModifier = 1;
-                            break;
-                        case false:
-                            mc.xModifier = -1;
-                            break;
+        if (controls.right in keysDown !== controls.left in keysDown) {
+            if (absoluteValue(mc.velx) < mc.walkSpeed || absoluteValue(mc.velx) < mc.runSpeed && controls.sprint in keysDown === true) { //if is below max speed
+                if (mc.velx + currentAccel <= mc.walkSpeed || mc.velx + currentAccel <= mc.runSpeed && 16 in keysDown === true) { //if will be below max speed
+                    if (controls.right in keysDown) {
+                        mc.velx += currentAccel;
+                    }
+                    else {
+                        mc.velx -= currentAccel;
                     }
                 }
-                if (mc.velx < mc.walkSpeed || mc.velx < mc.runSpeed && 16 in keysDown === true) { //if is below max speed
-                    if (mc.velx + currentAccel <= mc.walkSpeed || mc.velx + currentAccel <= mc.runSpeed && 16 in keysDown === true) { //if will be below max speed
-                        mc.velx += currentAccel;
-                    } else {
+                else {
+                    if (controls.right in keysDown) {
                         mc.velx = currentMaxSpeed;
                     }
-                } else if (mc.velx > mc.walkSpeed && 16 in keysDown === false && mc.onGround === true) {
-                    mc.velx -= mc.friction;
+                    else {
+                        mc.velx = currentMaxSpeed * -1;
+                    }
                 }
             }
-
-            if (39 in keysDown === 37 in keysDown && mc.velx !== 0) { //if theyre both up or down
-                if (mc.velx - currentFriction >= 0) {
-                    mc.velx -= currentFriction;
-                } else {
-                    mc.velx = 0;
-                }
+            else if (mc.velx > mc.walkSpeed && controls.sprint in keysDown === false && mc.onGround === true) {
+                mc.velx -= mc.friction;
             }
-        } else if (mc.velx - currentFriction >= 0) {
-            mc.velx -= currentAccel;
-        } else {
-            mc.velx = 0;
+        }
+        if (controls.right in keysDown === controls.left in keysDown && mc.velx !== 0) { //if theyre both up or down
+            if (mc.velx - currentFriction >= 0) {
+                mc.velx -= currentFriction;
+            }
+            else {
+                mc.velx = 0;
+            }
         }
     }
 
     function updateVerVel() {
-        if (38 in keysDown === true || //up
-            32 in keysDown === true || //space
-            90 in keysDown === true) { //z
+        if (controls.jump in keysDown === true) {
             if (mc.onGround === true) { //jump part
                 mc.state = 'jumpsquat';
                 window.setTimeout(function () {
@@ -196,12 +204,12 @@ $(function () {
                     switch (38 in keysDown === true || //up
                         32 in keysDown === true || //space
                         90 in keysDown === true) { //z
-                        case false:
-                            mc.vely = mc.shortHop;
-                            break;
-                        default:
-                            mc.vely = mc.fullHop;
-                            break;
+                    case false:
+                        mc.vely = mc.shortHop;
+                        break;
+                    default:
+                        mc.vely = mc.fullHop;
+                        break;
                     }
                     mc.onGround = false;
                 }, 1000 / 60 * mc.jumpsquatDuration); // four frame jumpsquat
@@ -213,109 +221,123 @@ $(function () {
     }
 
     function updateFacing() {
-        if (37 in keysDown === true && 39 in keysDown === false) { //left arrow
+        if (controls.left in keysDown === true && controls.right in keysDown === false) { //left arrow
             mc.facing = 0;
         }
-        if (39 in keysDown === true && 37 in keysDown === false) { //right arrow
+        if (controls.right in keysDown === true && controls.left in keysDown === false) { //right arrow
             mc.facing = 1;
         }
     }
 
     function updateSprite() {
         switch (mc.state) {
-            case 'jumpsquat':
-                mc.currentSprite = mc.jumpsquat[mc.facing];
-                break; //TODO add air
-            default:
-                mc.currentSprite = mc.idle[mc.facing];
-                break;
+        case 'jumpsquat':
+            mc.currentSprite = sprites.jumpsquat[mc.facing];
+            break; //TODO add air
+        default:
+            mc.currentSprite = sprites.idle[mc.facing];
+            break;
         }
     }
 
-    function updatePos() { //TODO clean up
-        var currentModdedVelx = mc.velx * mc.xModifier;
-        var currentXdir = -1;
-        var currentYdir = -1;
-        if (currentModdedVelx > 0)
-            currentXdir = 1;
-        if (mc.vely > 0)
-            currentYdir = 1;
-        mc.x += currentModdedVelx;
-        mc.y += mc.vely / mc.jumpSpeed;
-
-    }
-
-    function doColisionThingies() {
-        //vertical collisions
-        for (let i = 0; i < 2; i++) { //repeat twice
-            for (let i2 = 0; i2 < 2; i2++) {
-                if (collisions[Math.trunc(mc.x + i * mc.width)] !== undefined && collisions[Math.trunc(mc.x + i * mc.width)][Math.trunc(mc.y + i2 * mc.height)] !== undefined) { //if it exists
-                    var collision = collisions[Math.trunc(mc.x + i * mc.width)][Math.trunc(mc.y + i2 * mc.height)]; //for ease of access
-                    if (mc.y + i2 * mc.height <= collision[3] && mc.y + i2 * mc.height >= collision[2]) { //if bottom of char is within block in terms of y
-                        mc.vely = 0;
-                        switch (i2) {
-                            case 1: //if it is detecting top hitbox
-                                mc.y = collision[2] - 1;
-                                break;
-                            case 0: //bottom hitbox
-                                mc.y = collision[3];
+    function updatePos() {
+        var newLocation = {
+            'x': mc.x + mc.velx
+            , 'y': mc.y + mc.vely * (mc.jumpSpeed / 10)
+        };
+        var truncatedLocation = truncatedCoordinates(newLocation);
+        var charBounds = {
+            'x': [newLocation.x - mc.width / 2, newLocation.x + mc.width / 2]
+            , 'y': [newLocation.y, newLocation.y + mc.height]
+        };
+        var oldCharBounds = {
+            'x': [mc.x - mc.width / 2, mc.x + mc.width / 2]
+            , 'y': [mc.y, mc.y + mc.height]
+        };
+        ctx.fillRect(truncatedLocation.x * blockSize, canvas.height - truncatedLocation.y * blockSize, blockSize, blockSize);
+        for (let i = 0; i < 2; i++) {
+            for (let i2 = 0; i2 < 3; i2++) {
+                var testingBlock = getBlock(truncatedLocation.x - 1 + i2, truncatedLocation.y + i);
+                var wasInsideBlock = insideBlock(oldCharBounds, testingBlock.bounds);
+                var willBeInsideBlock = insideBlock(charBounds, testingBlock.bounds);
+                if (willBeInsideBlock.x === true && willBeInsideBlock.y === true) {
+                    if (testingBlock.collision !== false) {
+                        if (wasInsideBlock.x === true && wasInsideBlock.y == false) {
+                            if (mc.vely > 0) {
+                                newLocation.y = testingBlock.bounds.y[0] - mc.height;
+                            }
+                            else if (mc.vely < 0) {
+                                newLocation.y = testingBlock.bounds.y[1];
                                 mc.onGround = true;
-                                mc.state = "idle";
-                                break;
+                            }
+                            mc.vely = 0;
+                        }
+                        else if (wasInsideBlock.y === true && wasInsideBlock.x === false) {
+                            console.log('Inside x');
+                            if (mc.velx > 0) {
+                                newLocation.x = testingBlock.bounds.x[0] - mc.width / 2;
+                            }
+                            else if (mc.velx < 0) {
+                                newLocation.x = testingBlock.bounds.x[1] + mc.width / 2;
+                            }
+                            mc.velx = 0;
+                        }
+                        else {
+                            console.log('catch all');
                         }
                     }
                 }
             }
         }
-        //horizontal collisions
-        for (let i = 0; i < 2; i++) {
-            for (let i2 = 0; i < 2; i++) {
-                if (collisions[Math.trunc(mc.x + i * mc.width)] !== undefined && collisions[Math.trunc(mc.x + i * mc.width)][mc.y + i2 * mc.width] !== undefined) {
-                    var collision = collisions[Math.trunc(mc.x + i * mc.width)][mc.y + i2 * mc.width];
-                    console.log('arewithin');
-                    if (isWithin(mc.x + i * mc.width, collision[0], collision[2])) {
-                        mc.x = Math.round(mc.x);
-                    }
-                }
-            }
-        }
+        mc.y = newLocation.y;
+        mc.x = newLocation.x;
     }
 
-    //TODO implement a block detection system using the previous coordinates so it knows what side of the block you are on. for efficiecny it may work to put the update pos function inside of the collisions function since you need two values for the position. as for ground collision, just use math to find the two blocks that you are on, and if you are on air in one of them or both of them.
-    function updateGroundState() { //supposed to detect when player walks off platform
-        console.log('ground state  updated');
-        if (collisions[Math.round(mc.x)] !== undefined && collisions[Math.round(mc.x - 1)] !== undefined && collisions[Math.round(mc.x + 1)] !== undefined && //if it exists
-            Array.isArray(collisions[Math.round(mc.x)][Math.trunc(mc.y - 1)]) === false) { //or not an array
-            if (Math.round(mc.x) === Math.trunc(mc.x)) {
-                if (isWithin(mc.x + mc.velx * mc.xModifier, Math.round(mc.x), mc.velx) === true) {
-                    mc.x = Math.round(mc.x);
-                    mc.onGround = false;
-                    mc.velx = 0;
-                }
-            } else if (Math.round(mc.x) !== Math.trunc(mc.x)) {
-                if (isWithin(mc.x + mc.width + mc.velx * mc.xModifier, Math.round(mc.x + 1), mc.velx) === true) {
-                    mc.x = Math.round(mc.x);
-                    mc.onGround = false;
-                    mc.velx = 0;
-                }
-            }
-
+    function getBlock(x, y) {
+        x = Math.trunc(x);
+        y = Math.trunc(y);
+        var blockName = '   ';
+        var block = {
+            'name': '   '
+            , 'collision': false
         }
+        block.bounds = {
+            'x': [x, x + 1]
+            , 'y': [y, y + 1]
+        };
+        if (stage[x] && stage[x][y]) {
+            blockName = stage[x][y];
+            block.name = stage[x][y];
+        }
+        if (blockData[blockName]) {
+            block = blockData[blockName];
+            block.name = blockName;
+            block.bounds = {
+                'x': [x, x + 1]
+                , 'y': [y, y + 1]
+            };
+        }
+        return block;
+    }
+
+    function truncatedCoordinates(object) {
+        return {
+            x: Math.trunc(object.x)
+            , y: Math.trunc(object.y)
+        };
     }
 
     function debugInfo() {
-        if (192 in keysDown === true &&
-            temporaryValues.debugOverlay === false) {
+        if (192 in keysDown === true && temporaryValues.debugOverlay === false) {
             if (debugOverlay === false) {
                 debugOverlay = true;
-            } else if (debugOverlay === true) {
+            }
+            else if (debugOverlay === true) {
                 debugOverlay = false;
             }
             temporaryValues.debugOverlay = true;
         }
-
-        if (192 in keysDown === false &&
-            temporaryValues.debugOverlay === true) {
+        if (192 in keysDown === false && temporaryValues.debugOverlay === true) {
             temporaryValues.debugOverlay = false;
         }
         if (debugOverlay === true) {
@@ -335,15 +357,14 @@ $(function () {
                     ctx.rect(i * blockSize, canvas.height - j * blockSize, blockSize, blockSize);
                     ctx.stroke();
                 }
-
             }
         }
     }
-
     //sets the current level
     if (!getCookie('level')) {
         setCookie('level', 1, 9999);
-    } else {
+    }
+    else {
         //        console.log(getCookie('level'));
     }
 
@@ -352,68 +373,42 @@ $(function () {
             var column = val1;
             $.each(column, function (index2, val2) { //TODO make a dynamic system for blocks that can be easily
                 switch (val2) {
-                    case 'blk': //black block
-                        ctx.fillStyle = "#000";
-                        ctx.fillRect(index1 * blockSize - 1, canvas.height - ((index2) * blockSize) - 1, blockSize + 2, blockSize + 2);
-                        break;
-                    case 'bsc': //basic block
-                        ctx.drawImage(blocks.basic, index1 * blockSize, canvas.height - index2 * blockSize, blockSize, blockSize);
-                        break;
-                    default:
-                        break;
+                case 'blk': //black block
+                    ctx.fillStyle = "#000";
+                    ctx.fillRect(index1 * blockSize, canvas.height - ((index2) * blockSize), blockSize, blockSize);
+                    break;
+                case 'bsc': //basic block
+                    ctx.drawImage(blocks.basic, index1 * blockSize, canvas.height - index2 * blockSize, blockSize, blockSize);
+                    break;
+                default:
+                    break;
                 }
             });
         });
     }
-
-    function makeCollisions() {
-        $.each(stage, function (index1, val1) { //for each block in stage
-            var column = val1;
-            collisions.push([]);
-            $.each(column, function (index2, val2) {
-                switch (val2) {
-                    case 'blk': //black block
-                        collisions[index1].push([index1, index1 + 1, index2, index2 + 1]);
-                        break;
-                    case 'bsc':
-                        collisions[index1].push([index1, index1 + 1, index2, index2 + 1]);
-                        break;
-                    default:
-                        collisions[index1].push('');
-                        break;
-                }
-            });
-        });
-        //        console.log(collisions);
-    }
-
+    var blockData;
     //Load current level
     var stage = $.getJSON('levels/level' + getCookie('level') + '.json', (function () {
-        stage = stage.responseJSON;
-        //        console.log(stage);
-        makeCollisions();
+        blockData = stage.responseJSON.blocks;
+        stage = stage.responseJSON.stage;
         window.requestAnimationFrame(mainGameLoop);
     }));
 
     function mainGameLoop() {
         switch (mode) {
-            case 'menu':
-                ctx.clearRect(0, 0, canvas.width, canvas.height + blockSize);
-                updateHorVel();
-                updateVerVel();
-                updatePos();
-                doColisionThingies();
-                //if (mc.onGround === true) {
-                    //updateGroundState();
-                //}
-                updateFacing();
-                drawStage();
-                updateSprite();
-                drawChar();
-                debugInfo();
-                break;
-            default:
-                break;
+        case 'menu':
+            ctx.clearRect(0, 0, canvas.width, canvas.height + blockSize);
+            leftRightControls();
+            updateVerVel();
+            updatePos();
+            updateFacing();
+            drawStage();
+            updateSprite();
+            drawChar();
+            debugInfo();
+            break;
+        default:
+            break;
         }
         window.requestAnimationFrame(mainGameLoop);
     }
