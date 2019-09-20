@@ -8,7 +8,8 @@ $(function () {
     var ctx = canvas.getContext('2d');
     var blockSize;
     var keysDown = [];
-    var debugOverlay = true;
+    var viewWidth = 30;
+    var debugOverlay = false;
     var temporaryValues = {
         debugOverlay: false
     };
@@ -60,6 +61,9 @@ $(function () {
     function insideBlock(objectOne, objectTwo) {
         var xin = false;
         var yin = false;
+        var testingWidth = absoluteValue(objectTwo.x[0] - objectTwo.x[1]);
+        var testingHeight = absoluteValue(objectTwo.y[0] - objectTwo.y[1]);
+        //todo eventually maybe replace this with a function that uses the average difference.
         if (isWithin(objectOne.x[0], objectTwo.x[0], objectTwo.x[1]) || isWithin(objectOne.x[1], objectTwo.x[0], objectTwo.x[1]) || isWithin(objectTwo.x[0], objectOne.x[0], objectOne.x[1]) || isWithin(objectTwo.x[1], objectOne.x[0], objectOne.x[1])) {
             xin = true;
         }
@@ -75,6 +79,19 @@ $(function () {
     function delay(code, timeMs) {
         window.setInterval(code(), timeMs);
     }
+
+    function approachZero(difference, number) {
+        var subtracted = number - difference;
+        var added = number + difference;
+        var returnValue;
+        if (absoluteValue(subtracted) >= absoluteValue(added)) {
+            returnValue = added;
+        }
+        else if (absoluteValue(subtracted < absoluteValue(added))) {
+            returnValue = subtracted;
+        }
+        return returnValue;
+    }
     var blocks = {
         basic: loadImage('img/sprites/blocks/basic.png')
     };
@@ -88,10 +105,13 @@ $(function () {
         x: 17
         , y: 10
         , velx: 0
-        , vely: 5
+        , vely: 2
+        , camerax: 0
+        , cameray: 0
         , onGround: false
-        , accelx: 0.05//TODO fix friction so that it applies when moving left. tbh idk how that even happened.
-        , airAccelx: 0.04
+        , accelx: 0.05 //TODO fix friction so that it applies when moving left. tbh idk how that even happened.
+            
+        , airAccelx: 0.03
         , friction: 0.02
         , airFriction: 0.005
         , walkSpeed: 0.15
@@ -103,8 +123,9 @@ $(function () {
         , jumpsquatDuration: 3, //in frames
         jumpSpeed: 3
         , displayWidth: 1
-        , width: 0.8
-        , height: 1
+        , width: 0.9
+        , height: 0.999 //if you choose exactly the same value as a block, it causes collision issues.
+            
         , state: 'idle'
     };
     var controls = {
@@ -186,8 +207,8 @@ $(function () {
             }
         }
         if (controls.right in keysDown === controls.left in keysDown && mc.velx !== 0) { //if theyre both up or down
-            if (mc.velx - currentFriction >= 0) {
-                mc.velx -= currentFriction;
+            if (absoluteValue(mc.velx) - currentFriction >= 0) {
+                mc.velx = approachZero(currentFriction, mc.velx);
             }
             else {
                 mc.velx = 0;
@@ -255,6 +276,27 @@ $(function () {
             , 'y': [mc.y, mc.y + mc.height]
         };
         ctx.fillRect(truncatedLocation.x * blockSize, canvas.height - truncatedLocation.y * blockSize, blockSize, blockSize);
+
+        function yCollision() {
+            if (mc.vely > 0) {
+                newLocation.y = testingBlock.bounds.y[0] - mc.height;
+            }
+            else if (mc.vely < 0) {
+                newLocation.y = testingBlock.bounds.y[1];
+                mc.onGround = true;
+            }
+            mc.vely = 0;
+        }
+
+        function xCollision() {
+            if (mc.velx > 0) {
+                newLocation.x = testingBlock.bounds.x[0] - mc.width / 2;
+            }
+            else if (mc.velx < 0) {
+                newLocation.x = testingBlock.bounds.x[1] + mc.width / 2;
+            }
+            mc.velx = 0;
+        }
         for (let i = 0; i < 2; i++) {
             for (let i2 = 0; i2 < 3; i2++) {
                 var testingBlock = getBlock(truncatedLocation.x - 1 + i2, truncatedLocation.y + i);
@@ -263,31 +305,15 @@ $(function () {
                 if (willBeInsideBlock.x === true && willBeInsideBlock.y === true) {
                     if (testingBlock.collision !== false) {
                         if (wasInsideBlock.x === true && wasInsideBlock.y == false) {
-                            if (mc.vely > 0) {
-                                newLocation.y = testingBlock.bounds.y[0] - mc.height;
-                            }
-                            else if (mc.vely < 0) {
-                                newLocation.y = testingBlock.bounds.y[1];
-                                mc.onGround = true;
-                            }
-                            mc.vely = 0;
+                            yCollision();
                         }
                         else if (wasInsideBlock.y === true && wasInsideBlock.x === false) {
-                            console.log('Inside x');
-                            if (mc.velx > 0) {
-                                newLocation.x = testingBlock.bounds.x[0] - mc.width / 2;
-                            }
-                            else if (mc.velx < 0) {
-                                newLocation.x = testingBlock.bounds.x[1] + mc.width / 2;
-                            }
-                            mc.velx = 0;
+                            xCollision();
                         }
-                        else {
-                            console.log('catch all');
-                        }
+                        else {}
                     }
                 }
-            }
+            } //todo still doesnt account for entering a block diagonally
         }
         mc.y = newLocation.y;
         mc.x = newLocation.x;
@@ -394,6 +420,21 @@ $(function () {
         window.requestAnimationFrame(mainGameLoop);
     }));
 
+    function updateCamera() {
+        mc.camerax = -mc.x + viewWidth / 2;
+    }
+
+    function render() {
+        ctx.save();
+        ctx.translate(mc.camerax * blockSize, -mc.cameray * blockSize);
+        drawStage();
+        updateSprite();
+        drawChar();
+        ctx.restore();
+        updateCamera();
+        mc.cameray = -mc.y + 5;
+    }
+
     function mainGameLoop() {
         switch (mode) {
         case 'menu':
@@ -402,9 +443,7 @@ $(function () {
             updateVerVel();
             updatePos();
             updateFacing();
-            drawStage();
-            updateSprite();
-            drawChar();
+            render();
             debugInfo();
             break;
         default:
