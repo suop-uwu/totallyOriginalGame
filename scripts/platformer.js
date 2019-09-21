@@ -123,9 +123,10 @@ $(function () {
         , jumpsquatDuration: 3, //in frames
         jumpSpeed: 3
         , displayWidth: 1
-        , width: 0.9
+        , width: 0.8
         , height: 0.999 //if you choose exactly the same value as a block, it causes collision issues.
             
+        , scrollMultiplier: 5
         , state: 'idle'
     };
     var controls = {
@@ -275,7 +276,6 @@ $(function () {
             'x': [mc.x - mc.width / 2, mc.x + mc.width / 2]
             , 'y': [mc.y, mc.y + mc.height]
         };
-        ctx.fillRect(truncatedLocation.x * blockSize, canvas.height - truncatedLocation.y * blockSize, blockSize, blockSize);
 
         function yCollision() {
             if (mc.vely > 0) {
@@ -422,17 +422,23 @@ $(function () {
 
     function updateCamera() {
         mc.camerax = -mc.x + viewWidth / 2;
+        if (absoluteValue(mc.y - (mc.cameray + canvas.height / blockSize)) <= (canvas.height / blockSize / mc.scrollMultiplier)) {
+            mc.cameray = mc.y - (canvas.height / blockSize) + (canvas.height / blockSize / mc.scrollMultiplier);
+        }
+        else if (absoluteValue(mc.y - mc.cameray <= (canvas.height / blockSize / mc.scrollMultiplier))) {
+            mc.cameray = mc.y - (canvas.height / blockSize / mc.scrollMultiplier);
+        }
+        console.log(mc.cameray + '|||||' + (mc.y) + '||||' + canvas.height / blockSize);
     }
 
     function render() {
         ctx.save();
-        ctx.translate(mc.camerax * blockSize, -mc.cameray * blockSize);
+        ctx.translate(mc.camerax * blockSize, mc.cameray * blockSize);
         drawStage();
         updateSprite();
         drawChar();
         ctx.restore();
         updateCamera();
-        mc.cameray = -mc.y + 5;
     }
 
     function mainGameLoop() {
