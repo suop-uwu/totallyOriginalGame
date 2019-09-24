@@ -1,14 +1,10 @@
-var $, window, document, Image; //only so that my code checker doesn't get angry at me
-/*pitfalls:
-linter doesn't recognize the use of nonexistent properties of objects
-*/
-//TODO make scrolling levels 
 $(function () {
     var canvas = $('#mainCanvas')[0];
     var ctx = canvas.getContext('2d');
     var blockSize;
     var keysDown = [];
     var viewWidth = 30;
+    var animationCycleCounter = 0;
     var debugOverlay = false;
     var temporaryValues = {
         debugOverlay: false
@@ -92,13 +88,24 @@ $(function () {
         }
         return returnValue;
     }
+
+    function loadImages(path, count) {
+        var returnVal = [];
+        for (var i = 0; i < count; i++) {
+            returnVal.push(loadImage(path + (i) + '.png'));
+        }
+        console.log(returnVal);
+        return returnVal;
+    }
     var blocks = {
         basic: loadImage('img/sprites/blocks/basic.png')
     };
     var sprites = {
-        idle: [loadImage('img/sprites/zeeTee/idleL.png'), loadImage('img/sprites/zeeTee/idleR.png')]
-        , jumpsquat: [loadImage('img/sprites/zeeTee/jumpsquatL.png'), loadImage('img/sprites/zeeTee/jumpsquatR.png')]
-        , currentSprite: loadImage('img/sprites/zeeTee/idleR.png')
+        idle: loadImage('img/sprites/zeeTee/idle.png')
+        , jumpsquat: loadImage('img/sprites/zeeTee/jumpsquat.png')
+        , airUp: loadImage('img/sprites/zeeTee/airUp.png')
+        , airDown: loadImage('img/sprites/zeeTee/airDown.png')
+        , walk: loadImages('img/sprites/zeeTee/walk', 3)
     }
     var mc = { //all the info on the mc
         facing: 1, // 0 is left, 1 is right
@@ -109,8 +116,7 @@ $(function () {
         , camerax: 0
         , cameray: 0
         , onGround: false
-        , accelx: 0.05 //TODO fix friction so that it applies when moving left. tbh idk how that even happened.
-            
+        , accelx: 0.05
         , airAccelx: 0.03
         , friction: 0.02
         , airFriction: 0.005
@@ -158,7 +164,7 @@ $(function () {
         char = event.which;
         delete keysDown[event.keyCode];
     });
-    var mode = 'menu';
+    var mode = 'game';
     ctx.mozImageSmoothingEnabled = false;
     ctx.webkitImageSmoothingEnabled = false;
     ctx.msImageSmoothingEnabled = false;
@@ -166,7 +172,10 @@ $(function () {
     ctx.font = '20px Ubuntu Mono';
 
     function drawChar() {
-        ctx.drawImage(mc.currentSprite, (mc.x * blockSize) - ((blockSize * mc.width) / 2), canvas.height - mc.y * blockSize, blockSize * mc.displayWidth, blockSize * mc.height);
+        ctx.save();
+        ctx.scale(mc.facing, 1);
+        ctx.drawImage(mc.currentSprite, mc.facing * (mc.x * blockSize) - ((blockSize * mc.width) / 2), canvas.height - mc.y * blockSize, blockSize * mc.displayWidth, blockSize * mc.height);
+        ctx.restore();
     }
 
     function absoluteValue(number) {
@@ -185,26 +194,13 @@ $(function () {
             currentMaxSpeed = mc.runSpeed;
         }
         if (controls.right in keysDown !== controls.left in keysDown) {
-            if (absoluteValue(mc.velx) < mc.walkSpeed || absoluteValue(mc.velx) < mc.runSpeed && controls.sprint in keysDown === true) { //if is below max speed
-                if (mc.velx + currentAccel <= mc.walkSpeed || mc.velx + currentAccel <= mc.runSpeed && 16 in keysDown === true) { //if will be below max speed
-                    if (controls.right in keysDown) {
-                        mc.velx += currentAccel;
-                    }
-                    else {
-                        mc.velx -= currentAccel;
-                    }
+            if (mc.velx + currentAccel <= currentMaxSpeed && controls.right in keysDown === true || mc.velx - currentAccel >= currentMaxSpeed * -1 && controls.left in keysDown === true) {
+                if (controls.right in keysDown === true) {
+                    mc.velx += currentAccel;
                 }
-                else {
-                    if (controls.right in keysDown) {
-                        mc.velx = currentMaxSpeed;
-                    }
-                    else {
-                        mc.velx = currentMaxSpeed * -1;
-                    }
+                else if (controls.left in keysDown === true) {
+                    mc.velx -= currentAccel;
                 }
-            }
-            else if (mc.velx > mc.walkSpeed && controls.sprint in keysDown === false && mc.onGround === true) {
-                mc.velx -= mc.friction;
             }
         }
         if (controls.right in keysDown === controls.left in keysDown && mc.velx !== 0) { //if theyre both up or down
@@ -244,7 +240,7 @@ $(function () {
 
     function updateFacing() {
         if (controls.left in keysDown === true && controls.right in keysDown === false) { //left arrow
-            mc.facing = 0;
+            mc.facing = -1;
         }
         if (controls.right in keysDown === true && controls.left in keysDown === false) { //right arrow
             mc.facing = 1;
@@ -252,12 +248,43 @@ $(function () {
     }
 
     function updateSprite() {
+        function updateState() {
+            if (mc.onGround === true) {
+                mc.state = 'ground';
+            }
+            else if (mc.onGround === false) {
+                mc.state = 'air';
+            }
+        }
+        updateState();
+        if (animationCycleCounter < 30) {
+            animationCycleCounter++;
+        }
+        else {
+            animationCycleCounter = 0;
+        }
         switch (mc.state) {
         case 'jumpsquat':
-            mc.currentSprite = sprites.jumpsquat[mc.facing];
-            break; //TODO add air
+            mc.currentSprite = sprites.jumpsquat;
+            break;
+        case 'air':
+            if (mc.vely > 0) {
+                mc.currentSprite = sprites.airUp;
+            }
+            else {
+                mc.currentSprite = sprites.airDown;
+            }
+            break;
+        case 'ground':
+            if (absoluteValue(mc.velx) > 0) {
+                mc.currentSprite = sprites.walk[absoluteValue(Math.round(animationCycleCounter / 7.5) - 2)];
+            }
+            else {
+                mc.currentSprite = sprites.idle;
+            }
+            break;
         default:
-            mc.currentSprite = sprites.idle[mc.facing];
+            mc.currentSprite = sprites.idle;
             break;
         }
     }
@@ -297,6 +324,7 @@ $(function () {
             }
             mc.velx = 0;
         }
+        mc.onGround = false;
         for (let i = 0; i < 2; i++) {
             for (let i2 = 0; i2 < 3; i2++) {
                 var testingBlock = getBlock(truncatedLocation.x - 1 + i2, truncatedLocation.y + i);
@@ -428,7 +456,6 @@ $(function () {
         else if (absoluteValue(mc.y - mc.cameray <= (canvas.height / blockSize / mc.scrollMultiplier))) {
             mc.cameray = mc.y - (canvas.height / blockSize / mc.scrollMultiplier);
         }
-        console.log(mc.cameray + '|||||' + (mc.y) + '||||' + canvas.height / blockSize);
     }
 
     function render() {
@@ -443,7 +470,7 @@ $(function () {
 
     function mainGameLoop() {
         switch (mode) {
-        case 'menu':
+        case 'game':
             ctx.clearRect(0, 0, canvas.width, canvas.height + blockSize);
             leftRightControls();
             updateVerVel();
@@ -452,7 +479,7 @@ $(function () {
             render();
             debugInfo();
             break;
-        default:
+        case 'builder':
             break;
         }
         window.requestAnimationFrame(mainGameLoop);
