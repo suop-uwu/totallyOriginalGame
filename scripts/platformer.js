@@ -10,6 +10,16 @@ $(function () {
         debugOverlay: false
     };
     var collisions = [];
+    const modes = {
+        menu: 0
+        , game: 1
+        , builder: 2
+    }
+    const playerStates = {
+        onGround: 0
+        , air: 1
+        , jumpSquat: 2
+    }
 
     function resizeCanvas() {
         canvas.height = window.innerHeight;
@@ -52,6 +62,14 @@ $(function () {
         else {
             return false;
         }
+    }
+
+    function combinedDifference(testingNum, num1, num2) {
+        return difference(testingNum, num1) + difference(testingNum, num2);
+    }
+
+    function difference(num1, num2) {
+        return Math.abs(num1 - num2);
     }
 
     function insideBlock(objectOne, objectTwo) {
@@ -106,6 +124,7 @@ $(function () {
         , airUp: loadImage('img/sprites/zeeTee/airUp.png')
         , airDown: loadImage('img/sprites/zeeTee/airDown.png')
         , walk: loadImages('img/sprites/zeeTee/walk', 3)
+        , crouch: loadImage('img/sprites/zeeTee/crouch.png')
     }
     var mc = { //all the info on the mc
         facing: 1, // 0 is left, 1 is right
@@ -130,10 +149,11 @@ $(function () {
         jumpSpeed: 3
         , displayWidth: 1
         , width: 0.8
-        , height: 0.999 //if you choose exactly the same value as a block, it causes collision issues.
+        , height: 0.8 //if you choose exactly the same value as a block, it causes collision issues.
             
+        , displayHeight: 1
         , scrollMultiplier: 5
-        , state: 'idle'
+        , state: playerStates.onGround
     };
     var controls = {
         left: 65
@@ -153,7 +173,7 @@ $(function () {
     }
 
     function absoluteValue(number) {
-        return Math.sqrt(number * number);
+        return Math.abs(number);
     }
     //keyhandler
     $(document).keydown(function (event, char) {
@@ -164,7 +184,7 @@ $(function () {
         char = event.which;
         delete keysDown[event.keyCode];
     });
-    var mode = 'game';
+    var mode = modes.game;
     ctx.mozImageSmoothingEnabled = false;
     ctx.webkitImageSmoothingEnabled = false;
     ctx.msImageSmoothingEnabled = false;
@@ -174,7 +194,7 @@ $(function () {
     function drawChar() {
         ctx.save();
         ctx.scale(mc.facing, 1);
-        ctx.drawImage(mc.currentSprite, mc.facing * (mc.x * blockSize) - ((blockSize * mc.width) / 2), canvas.height - mc.y * blockSize, blockSize * mc.displayWidth, blockSize * mc.height);
+        ctx.drawImage(mc.currentSprite, mc.facing * (mc.x * blockSize) - ((blockSize * mc.width) / 2) + ((2 / 16) * -blockSize), canvas.height - mc.y * blockSize, blockSize * mc.displayWidth, blockSize * mc.displayHeight);
         ctx.restore();
     }
 
@@ -216,9 +236,9 @@ $(function () {
     function updateVerVel() {
         if (controls.jump in keysDown === true) {
             if (mc.onGround === true) { //jump part
-                mc.state = 'jumpsquat';
+                mc.state = playerStates.jumpSquat;
                 window.setTimeout(function () {
-                    mc.state = 'air';
+                    mc.state = playerStates.air;
                     switch (38 in keysDown === true || //up
                         32 in keysDown === true || //space
                         90 in keysDown === true) { //z
@@ -250,10 +270,10 @@ $(function () {
     function updateSprite() {
         function updateState() {
             if (mc.onGround === true) {
-                mc.state = 'ground';
+                mc.state = playerStates.onGround;
             }
             else if (mc.onGround === false) {
-                mc.state = 'air';
+                mc.state = playerStates.air;
             }
         }
         updateState();
@@ -264,10 +284,10 @@ $(function () {
             animationCycleCounter = 0;
         }
         switch (mc.state) {
-        case 'jumpsquat':
+        case playerStates.jumpSquat:
             mc.currentSprite = sprites.jumpsquat;
             break;
-        case 'air':
+        case playerStates.air:
             if (mc.vely > 0) {
                 mc.currentSprite = sprites.airUp;
             }
@@ -275,12 +295,17 @@ $(function () {
                 mc.currentSprite = sprites.airDown;
             }
             break;
-        case 'ground':
+        case playerStates.onGround:
             if (absoluteValue(mc.velx) > 0) {
                 mc.currentSprite = sprites.walk[absoluteValue(Math.round(animationCycleCounter / 7.5) - 2)];
             }
             else {
-                mc.currentSprite = sprites.idle;
+                if (controls.down in keysDown === true) {
+                    mc.currentSprite = sprites.crouch;
+                }
+                else {
+                    mc.currentSprite = sprites.idle;
+                }
             }
             break;
         default:
@@ -338,10 +363,20 @@ $(function () {
                         else if (wasInsideBlock.y === true && wasInsideBlock.x === false) {
                             xCollision();
                         }
-                        else {}
+                        else {
+                            console.log(combinedDifference(charBounds.x[0], testingBlock.bounds.x[0], testingBlock.bounds.x[1]) + '|||' + combinedDifference(charBounds.x[1], testingBlock.bounds.x[0], testingBlock.bounds.x[1]) + '|||' + combinedDifference(charBounds.y[0], testingBlock.bounds.y[0], testingBlock.bounds.y[1]) + '|||' + combinedDifference(charBounds.y[1], testingBlock.bounds.y[0], testingBlock.bounds.y[1]));
+                            if (absoluteValue(mc.velx) > absoluteValue(mc.vely)) {
+                                yCollision();
+                                console.log('x');
+                            }
+                            else {
+                                //                                xCollision();
+                                //                                console.log('y');
+                            }
+                        }
                     }
                 }
-            } //todo still doesnt account for entering a block diagonally
+            } //todo still doesnt account for entering a block diagonally and implement steps
         }
         mc.y = newLocation.y;
         mc.x = newLocation.x;
@@ -350,9 +385,9 @@ $(function () {
     function getBlock(x, y) {
         x = Math.trunc(x);
         y = Math.trunc(y);
-        var blockName = '   ';
+        var blockName = 'air';
         var block = {
-            'name': '   '
+            'name': 'air'
             , 'collision': false
         }
         block.bounds = {
@@ -360,12 +395,12 @@ $(function () {
             , 'y': [y, y + 1]
         };
         if (stage[x] && stage[x][y]) {
-            blockName = stage[x][y];
-            block.name = stage[x][y];
+            blockName = reverseBlockData[stage[x][y]];
+            block.name = reverseBlockData[stage[x][y]];
         }
-        if (blockData[blockName]) {
-            block = blockData[blockName];
-            block.name = blockName;
+        if (blockData[reverseBlockData[blockName]]) {
+            block = blockData[reverseBlockData[blockName]];
+            block.id = blockName;
             block.bounds = {
                 'x': [x, x + 1]
                 , 'y': [y, y + 1]
@@ -427,11 +462,11 @@ $(function () {
             var column = val1;
             $.each(column, function (index2, val2) { //TODO make a dynamic system for blocks that can be easily
                 switch (val2) {
-                case 'blk': //black block
+                case blockData.black.id: //black block
                     ctx.fillStyle = "#000";
                     ctx.fillRect(index1 * blockSize, canvas.height - ((index2) * blockSize), blockSize, blockSize);
                     break;
-                case 'bsc': //basic block
+                case blockData.basic.id: //basic block
                     ctx.drawImage(blocks.basic, index1 * blockSize, canvas.height - index2 * blockSize, blockSize, blockSize);
                     break;
                 default:
@@ -441,11 +476,16 @@ $(function () {
         });
     }
     var blockData;
+    var reverseBlockData = {};
     //Load current level
     var stage = $.getJSON('levels/level' + getCookie('level') + '.json', (function () {
         blockData = stage.responseJSON.blocks;
         stage = stage.responseJSON.stage;
         window.requestAnimationFrame(mainGameLoop);
+        $.each(blockData, function (key, val) {
+            reverseBlockData[val.id] = key;
+        });
+        console.log(reverseBlockData);
     }));
 
     function updateCamera() {
@@ -470,7 +510,7 @@ $(function () {
 
     function mainGameLoop() {
         switch (mode) {
-        case 'game':
+        case modes.game:
             ctx.clearRect(0, 0, canvas.width, canvas.height + blockSize);
             leftRightControls();
             updateVerVel();
@@ -479,7 +519,7 @@ $(function () {
             render();
             debugInfo();
             break;
-        case 'builder':
+        case modes.builder:
             break;
         }
         window.requestAnimationFrame(mainGameLoop);
