@@ -112,7 +112,6 @@ $(function () {
         for (var i = 0; i < count; i++) {
             returnVal.push(loadImage(path + (i) + '.png'));
         }
-        console.log(returnVal);
         return returnVal;
     }
     var blocks = {
@@ -385,6 +384,7 @@ $(function () {
     function getBlock(x, y) {
         x = Math.trunc(x);
         y = Math.trunc(y);
+        var blockId = reverseBlockData['air'];
         var blockName = 'air';
         var block = {
             'name': 'air'
@@ -394,13 +394,13 @@ $(function () {
             'x': [x, x + 1]
             , 'y': [y, y + 1]
         };
-        if (stage[x] && stage[x][y]) {
+        if (stage[x] && stage[x][y] !== undefined) {
+            blockId = stage[x][y];
             blockName = reverseBlockData[stage[x][y]];
             block.name = reverseBlockData[stage[x][y]];
         }
-        if (blockData[reverseBlockData[blockName]]) {
-            block = blockData[reverseBlockData[blockName]];
-            block.id = blockName;
+        if (blockData[reverseBlockData[blockId]]) {
+            block = blockData[reverseBlockData[blockId]];
             block.bounds = {
                 'x': [x, x + 1]
                 , 'y': [y, y + 1]
