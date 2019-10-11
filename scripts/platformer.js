@@ -135,13 +135,15 @@ $(function () {
         , cameray: 0
         , onGround: false
         , accelx: 0.05
-        , airAccelx: 0.03
-        , friction: 0.02
-        , airFriction: 0.005
+        , airAccelx: 0.02
+        , friction: 0.01
+        , airFriction: 0.001
         , walkSpeed: 0.15
         , runSpeed: 0.3
         , gravity: 0.1
+        , fastFallGravity: 0.2
         , fallSpeed: 4
+        , fastFallSpeed: 6
         , fullHop: 2, //enough to jump around 5 blocks
         shortHop: 0.8
         , jumpsquatDuration: 3, //in frames
@@ -213,7 +215,7 @@ $(function () {
             currentMaxSpeed = mc.runSpeed;
         }
         if (controls.right in keysDown !== controls.left in keysDown) {
-            if (mc.velx + currentAccel <= currentMaxSpeed && controls.right in keysDown === true || mc.velx - currentAccel >= currentMaxSpeed * -1 && controls.left in keysDown === true) {
+            if (absoluteValue(mc.velx + currentAccel * mc.facing) <= currentMaxSpeed) {
                 if (controls.right in keysDown === true) {
                     mc.velx += currentAccel;
                 }
@@ -233,6 +235,14 @@ $(function () {
     }
 
     function updateVerVel() {
+        var currentFallSpeed = mc.fallSpeed;
+        var currentGravity = mc.gravity;
+        if (mc.onGround === false) {
+            if (controls.down in keysDown === true) {
+                currentFallSpeed = mc.fastFallSpeed;
+                currentGravity = mc.fastFallGravity;
+            }
+        }
         if (controls.jump in keysDown === true) {
             if (mc.onGround === true) { //jump part
                 mc.state = playerStates.jumpSquat;
@@ -252,8 +262,11 @@ $(function () {
                 }, 1000 / 60 * mc.jumpsquatDuration); // four frame jumpsquat
             }
         }
-        if (mc.vely > mc.fallSpeed * -1) {
-            mc.vely -= mc.gravity;
+        if (mc.vely - currentGravity > currentFallSpeed * -1) {
+            mc.vely -= currentGravity;
+        }
+        else {
+            mc.vely = currentFallSpeed * -1;
         }
     }
 
@@ -299,17 +312,15 @@ $(function () {
                 mc.currentSprite = sprites.walk[absoluteValue(Math.round(animationCycleCounter / 7.5) - 2)];
             }
             else {
-                if (controls.down in keysDown === true) {
-                    mc.currentSprite = sprites.crouch;
-                }
-                else {
-                    mc.currentSprite = sprites.idle;
-                }
+                mc.currentSprite = sprites.idle;
             }
             break;
         default:
             mc.currentSprite = sprites.idle;
             break;
+        }
+        if (controls.down in keysDown === true) {
+            mc.currentSprite = sprites.crouch;
         }
     }
 
@@ -356,26 +367,19 @@ $(function () {
                 var willBeInsideBlock = insideBlock(charBounds, testingBlock.bounds);
                 if (willBeInsideBlock.x === true && willBeInsideBlock.y === true) {
                     if (testingBlock.collision !== false) {
-                        if (wasInsideBlock.x === true && wasInsideBlock.y == false) {
+                        if (wasInsideBlock.x === true && wasInsideBlock.y === false) {
                             yCollision();
                         }
                         else if (wasInsideBlock.y === true && wasInsideBlock.x === false) {
                             xCollision();
                         }
-                        else {
-                            console.log(combinedDifference(charBounds.x[0], testingBlock.bounds.x[0], testingBlock.bounds.x[1]) + '|||' + combinedDifference(charBounds.x[1], testingBlock.bounds.x[0], testingBlock.bounds.x[1]) + '|||' + combinedDifference(charBounds.y[0], testingBlock.bounds.y[0], testingBlock.bounds.y[1]) + '|||' + combinedDifference(charBounds.y[1], testingBlock.bounds.y[0], testingBlock.bounds.y[1]));
-                            if (absoluteValue(mc.velx) > absoluteValue(mc.vely)) {
-                                yCollision();
-                                console.log('x');
-                            }
-                            else {
-                                //                                xCollision();
-                                //                                console.log('y');
-                            }
+                        else if (wasInsideBlock.x === true && wasInsideBlock.y === true) {
+                            mc.vely = -0.001
+                            yCollision();
                         }
                     }
                 }
-            } //todo still doesnt account for entering a block diagonally and implement steps
+            } //todo implement steps. this still isnt a perfect solution.
         }
         mc.y = newLocation.y;
         mc.x = newLocation.x;
@@ -507,6 +511,8 @@ $(function () {
         ctx.restore();
         updateCamera();
     }
+
+    function doEntities() {}
 
     function mainGameLoop() {
         switch (mode) {
