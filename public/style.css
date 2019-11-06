@@ -1,0 +1,44 @@
+html,
+body {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    font-family: roboto;
+}
+
+div.container {
+    width: 100%;
+    min-height: 100%;
+    -webkit-background-size: cover;
+    background-size: cover;
+}
+
+div.content {
+    background: white;
+    margin: 20px;
+    padding: 20px;
+    min-width: 60%;
+    max-width: calc(100% - 40px);
+    overflow: hidden
+}
+
+.flex {
+    display: flex;
+}
+
+#main {
+    flex-flow: column;
+    align-items: center;
+    justify-content: flex-start;
+    background: white;
+}
+
+.spin {
+    animation: 1s infinite spin normal;
+    animation-timing-function: linear;
+}
+
+canvas {
+    background-color: aliceblue;
+}
