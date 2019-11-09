@@ -279,6 +279,7 @@ $(function () {
             greyscale: 100
         }),
     ];
+    var socketEntities = [];
     window.onresize = resizeCanvas;
     resizeCanvas();
 
@@ -307,10 +308,15 @@ $(function () {
     ctx.imageSmoothingEnabled = false;
     ctx.font = '20px Ubuntu Mono';
 
-    function drawControllableEntities() {
+    function drawEntities() {
         $.each(controllableEntities, function (index, entity) {
             ctx.save();
             drawSprite(entity.x, entity.y, entity.facing, entity.currentSprite, entity.displayWidth, entity.displayHeight);
+            ctx.restore();
+        });
+        $.each(socketEntities, function (index, entity) {
+            ctx.save();
+            drawSprite(entity.x, entity.y, entity.facing, sprites.idle, entity.displayWidth, entity.displayHeight);
             ctx.restore();
         });
 
@@ -645,12 +651,20 @@ $(function () {
         ctx.translate(controllableEntities[cameraFollowing].camerax * blockSize, controllableEntities[cameraFollowing].cameray * blockSize);
         drawStage();
         updateSprite();
-        drawControllableEntities();
+        drawEntities();
         ctx.restore();
         updateCamera();
     }
 
     function doEntities() {}
+
+    function socketMultiplayer() {
+        socket.emit('playerData', controllableEntities);
+    }
+
+    socket.on('playerData', function (data) {
+        socketEntities = data;
+    });
 
     function mainGameLoop() {
         switch (mode) {
@@ -660,6 +674,9 @@ $(function () {
                 jumpingControls();
                 updatePos();
                 updateFacing();
+                if (animationCycleCounter % 2 === 0) {
+                    socketMultiplayer();
+                }
                 render();
                 // debugInfo();
                 window.requestAnimationFrame(mainGameLoop);
