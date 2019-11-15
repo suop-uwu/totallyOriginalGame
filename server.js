@@ -34,11 +34,24 @@ app.get('/', function (req, res) {
     res.sendFile(__dirname + '/public/index.html');
 });
 
+function arrayRemove(arr, value) {
+
+    return arr.filter(function (ele) {
+        return ele != value;
+    });
+
+}
+
 var currentPlayers = [];
+var currentPlayersData = [];
 io.on('connection', function (socket) {
+    var playerName;
     console.log('a user connected');
     socket.on('disconnect', function () {
         console.log('user disconnected');
+        if (playerName !== undefined) {
+            currentPlayers = arrayRemove(currentPlayers, playerName);
+        }
     });
 
     socket.on('nameRequest', function (name) {
@@ -47,13 +60,24 @@ io.on('connection', function (socket) {
                 socket.emit('nameRequest', false);
             } else {
                 currentPlayers.push(name);
+                playerName = name;
                 socket.emit('nameRequest', true);
             }
         }
     });
 
     socket.on('playerData', function (data) {
-        io.emit('playerData', data);
+        var playerAlreadyIn = false;
+        for (let i = 0; i < currentPlayers.length; i++) {
+            if (currentPlayers[i].name === data.name) {
+                playerAlreadyIn = true;
+                currentPlayers[i] = data;
+            }
+        }
+        if (playerAlreadyIn === false) {
+            currentPlayersData.push(data);
+        }
+        socket.broadcast.emit('playerData', data.data);
     });
 });
 

@@ -3,6 +3,7 @@ $(function () {
     var ctx = canvas.getContext('2d');
     var blockSize;
     var keysDown = [];
+    var userName = '';
     var viewWidth = 30;
     var animationCycleCounter = 0;
     var debugOverlay = false;
@@ -313,6 +314,7 @@ $(function () {
             ctx.save();
             drawSprite(entity.x, entity.y, entity.facing, entity.currentSprite, entity.displayWidth, entity.displayHeight);
             ctx.restore();
+            // ctx.fillText() todo
         });
         $.each(socketEntities, function (index, entity) {
             ctx.save();
@@ -659,7 +661,10 @@ $(function () {
     function doEntities() {}
 
     function socketMultiplayer() {
-        socket.emit('playerData', controllableEntities);
+        socket.emit('playerData', {
+            name: userName,
+            data: controllableEntities
+        });
     }
 
     socket.on('playerData', function (data) {
@@ -697,7 +702,9 @@ $(function () {
                         resizeCanvas();
                         $('#signIn').css('display', 'none');
                         window.requestAnimationFrame(mainGameLoop);
-
+                        userName = $('#usernameInput').val();
+                    } else {
+                        $('#usernameIndicator').html('Username taken');
                     }
                 });
                 break;
