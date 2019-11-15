@@ -301,7 +301,7 @@ $(function () {
         char = event.which;
         delete keysDown[event.keyCode];
     });
-    var mode = modes.game;
+    var mode = modes.menu;
     ctx.mozImageSmoothingEnabled = false;
     ctx.webkitImageSmoothingEnabled = false;
     ctx.msImageSmoothingEnabled = false;
@@ -686,9 +686,19 @@ $(function () {
             case modes.menu:
                 canvas.height = 0;
                 canvas.width = 0;
-                $.get('/test', function (data) {
-                    console.log(data);
-                    $('#main').append('<h1>' + data + '</h1>');
+                window.onresize = function () {};
+                $('#confirmUsername').click(function () {
+                    socket.emit('nameRequest', $('#usernameInput').val());
+                });
+                socket.on('nameRequest', function (answer) {
+                    if (answer === true) {
+                        mode = modes.game;
+                        window.onresize = resizeCanvas;
+                        resizeCanvas();
+                        $('#signIn').css('display', 'none');
+                        window.requestAnimationFrame(mainGameLoop);
+
+                    }
                 });
                 break;
         }
