@@ -51,7 +51,13 @@ io.on('connection', function (socket) {
         console.log('user disconnected');
         if (playerName !== undefined) {
             currentPlayers = arrayRemove(currentPlayers, playerName);
+            for (let i = 0; i < currentPlayersData.length; i++) {
+                if (currentPlayersData[i].name === playerName) {
+                    currentPlayersData.splice(i, 1);
+                }
+            }
         }
+        socket.broadcast.emit('playerData', currentPlayersData);
     });
 
     socket.on('nameRequest', function (name) {
@@ -68,16 +74,16 @@ io.on('connection', function (socket) {
 
     socket.on('playerData', function (data) {
         var playerAlreadyIn = false;
-        for (let i = 0; i < currentPlayers.length; i++) {
-            if (currentPlayers[i].name === data.name) {
+        for (let i = 0; i < currentPlayersData.length; i++) {
+            if (currentPlayersData[i].name === data.name) {
                 playerAlreadyIn = true;
-                currentPlayers[i] = data;
+                currentPlayersData[i] = data;
             }
         }
         if (playerAlreadyIn === false) {
             currentPlayersData.push(data);
         }
-        socket.broadcast.emit('playerData', data.data);
+        socket.broadcast.emit('playerData', currentPlayersData);
     });
 });
 

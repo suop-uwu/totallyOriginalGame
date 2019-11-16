@@ -313,13 +313,23 @@ $(function () {
         $.each(controllableEntities, function (index, entity) {
             ctx.save();
             drawSprite(entity.x, entity.y, entity.facing, entity.currentSprite, entity.displayWidth, entity.displayHeight);
+            ctx.fillStyle = '#000000';
+            ctx.font = blockSize / 2 + 'px consolas';
+            drawText('「' + userName + '」' + index, entity.x, entity.y + 0.2);
             ctx.restore();
-            // ctx.fillText() todo
         });
-        $.each(socketEntities, function (index, entity) {
-            ctx.save();
-            drawSprite(entity.x, entity.y, entity.facing, sprites.idle, entity.displayWidth, entity.displayHeight);
-            ctx.restore();
+        $.each(socketEntities, function (index, clientGroup) {
+            if (clientGroup.name !== userName) {
+
+                $.each(clientGroup.data, function (indexTwo, entity) {
+                    ctx.save();
+                    drawSprite(entity.x, entity.y, entity.facing, sprites.idle, entity.displayWidth, entity.displayHeight);
+                    ctx.fillStyle = '#000000';
+                    ctx.font = blockSize / 2 + 'px consolas';
+                    drawText('「' + clientGroup.name + '」' + index, entity.x, entity.y + 0.2);
+                    ctx.restore();
+                });
+            }
         });
 
     }
@@ -330,6 +340,10 @@ $(function () {
         ctx.scale(facing, 1);
         ctx.drawImage(sprite, facing * (x * blockSize) - ((blockSize * width) / 2) + ((2 / 16) * -blockSize), canvas.height - y * blockSize, blockSize * height, blockSize * height);
         ctx.restore();
+    }
+
+    function drawText(text, x, y) {
+        ctx.fillText(text, (x * blockSize) - ctx.measureText(text).width / 2, canvas.height - y * blockSize);
     }
 
     function absoluteValue(number) {
@@ -679,7 +693,7 @@ $(function () {
                 jumpingControls();
                 updatePos();
                 updateFacing();
-                if (animationCycleCounter % 2 === 0) {
+                if (animationCycleCounter % 3 === 0) {
                     socketMultiplayer();
                 }
                 render();
@@ -694,6 +708,14 @@ $(function () {
                 window.onresize = function () {};
                 $('#confirmUsername').click(function () {
                     socket.emit('nameRequest', $('#usernameInput').val());
+                });
+                $('#usernameInput').bind("enterKey", function (e) {
+                    socket.emit('nameRequest', $('#usernameInput').val());
+                });
+                $('#usernameInput').keyup(function (e) {
+                    if (e.keyCode == 13) {
+                        $(this).trigger("enterKey");
+                    }
                 });
                 socket.on('nameRequest', function (answer) {
                     if (answer === true) {
