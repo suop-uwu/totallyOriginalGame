@@ -23,6 +23,11 @@ $(function () {
         air: 1,
         jumpSquat: 2
     }
+    const menus = {
+        none: 0,
+        chat: 1
+    }
+    var menuMode = menus.none;
 
     function resizeCanvas() {
         canvas.height = window.innerHeight;
@@ -315,7 +320,7 @@ $(function () {
             drawSprite(entity.x, entity.y, entity.facing, entity.currentSprite, entity.displayWidth, entity.displayHeight);
             ctx.fillStyle = '#000000';
             ctx.font = blockSize / 2 + 'px consolas';
-            drawText('「' + userName + '」' + index, entity.x, entity.y + 0.2);
+            drawText('｢' + userName + '｣' + index, entity.x, entity.y + 0.2);
             ctx.restore();
         });
         $.each(socketEntities, function (index, clientGroup) {
@@ -338,7 +343,7 @@ $(function () {
         ctx.save();
         ctx.filter = 'greyscale(100%)';
         ctx.scale(facing, 1);
-        ctx.drawImage(sprite, facing * (x * blockSize) - ((blockSize * width) / 2) + ((2 / 16) * -blockSize), canvas.height - y * blockSize, blockSize * height, blockSize * height);
+        ctx.drawImage(sprite, facing * (x * blockSize) - ((blockSize * width) / 2) - blockSize * 0.07, canvas.height - y * blockSize, blockSize * height, blockSize * height);
         ctx.restore();
     }
 
@@ -684,6 +689,15 @@ $(function () {
     socket.on('playerData', function (data) {
         socketEntities = data;
     });
+
+    function nonControlButtons() {
+        $('html').keydown(function (key) {
+            if (key.which === 84) {
+                console.log('test');
+            }
+
+        });
+    }
 
     function mainGameLoop() {
         switch (mode) {
