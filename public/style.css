@@ -56,10 +56,14 @@ button {
     color: #1d89ff;
     font-weight: 400;
     font-size: 20px;
-    font-family: inherit;
+    font-family: Consolas, Arial;
     z-index: 0;
     overflow: hidden;
     transition: all 0.3s cubic-bezier(0.02, 0.01, 0.47, 1);
+}
+
+h1 {
+    font-family: Consolas, Arial;
 }
 
 canvas {
