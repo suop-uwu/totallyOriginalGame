@@ -4,6 +4,7 @@ $(function () {
     var blockSize;
     var keysDown = [];
     var userName = '';
+    var background = loadImage('img/sprites/backgrounds/level2.jpg');
     var viewWidth = 30;
     var animationCycleCounter = 0;
     var debugOverlay = false;
@@ -30,6 +31,7 @@ $(function () {
     var menuMode = menus.none;
 
     function resizeCanvas() {
+        canvasResize = false;
         canvas.height = window.innerHeight;
         canvas.width = window.innerWidth;
         blockSize = canvas.width / 30;
@@ -145,7 +147,7 @@ $(function () {
         airAccelx = 0.02,
         friction = 0.01,
         airFriction = 0.001,
-        walkSpeed = 0.15,
+        walkSpeed = 0.1,
         runSpeed = 0.3,
         gravity = 0.1,
         fastFallGravity = 0.2,
@@ -164,6 +166,7 @@ $(function () {
         state = playerStates.onGround,
         greyscale = 0,
         hueRotate = 0,
+        slowAccelx = 0.02,
         controls = {
             left: 65,
             right: 68,
@@ -204,7 +207,8 @@ $(function () {
             displayHeight,
             scrollMultiplier,
             state,
-            controls
+            controls,
+            slowAccelx
         };
     }
 
@@ -219,7 +223,7 @@ $(function () {
         airAccelx = 0.02,
         friction = 0.01,
         airFriction = 0.001,
-        walkSpeed = 0.15,
+        walkSpeed = 0.1,
         runSpeed = 0.3,
         gravity = 0.1,
         fastFallGravity = 0.2,
@@ -237,7 +241,8 @@ $(function () {
         scrollMultiplier = 5,
         state = playerStates.onGround,
         greyscale = 0,
-        hueRotate = 0
+        hueRotate = 0,
+        slowAccelx = 0.02,
     } = {}) {
         return {
             facing,
@@ -268,6 +273,7 @@ $(function () {
             displayHeight,
             scrollMultiplier,
             state,
+            slowAccelx
 
         };
     }
@@ -317,9 +323,16 @@ $(function () {
     function drawEntities() {
         $.each(controllableEntities, function (index, entity) {
             ctx.save();
+            ctx.font = blockSize / 2 + 'px consolas';
+            if (entity.nameWidth === undefined) {
+                entity.nameWidth = ctx.measureText('｢' + userName + '｣' + index).width;
+            }
             drawSprite(entity.x, entity.y, entity.facing, entity.currentSprite, entity.displayWidth, entity.displayHeight);
             ctx.fillStyle = '#000000';
-            ctx.font = blockSize / 2 + 'px consolas';
+            ctx.globalAlpha = 0.5;
+            ctx.fillRect(entity.x * blockSize - entity.nameWidth / 2, canvas.height - entity.y * blockSize - blockSize * .7, entity.nameWidth, blockSize * .6);
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = '#ffffff';
             drawText('｢' + userName + '｣' + index, entity.x, entity.y + 0.2);
             ctx.restore();
         });
@@ -328,10 +341,15 @@ $(function () {
 
                 $.each(clientGroup.data, function (indexTwo, entity) {
                     ctx.save();
-                    drawSprite(entity.x, entity.y, entity.facing, sprites.idle, entity.displayWidth, entity.displayHeight);
-                    ctx.fillStyle = '#000000';
                     ctx.font = blockSize / 2 + 'px consolas';
-                    drawText('「' + clientGroup.name + '」' + index, entity.x, entity.y + 0.2);
+                    drawSprite(entity.x, entity.y, entity.facing, sprites.idle, entity.displayWidth, entity.displayHeight);
+                    ctx.globalAlpha = 0.5;
+                    ctx.fillStyle = '#000000';
+                    var textWidth = ctx.measureText('｢' + clientGroup.name + '｣' + index).width;
+                    ctx.fillRect(entity.x * blockSize - textWidth / 2, canvas.height - entity.y * blockSize - blockSize * .7, textWidth, blockSize * .6);
+                    ctx.globalAlpha = 1;
+                    ctx.fillStyle = '#ffffff';
+                    drawText('｢' + clientGroup.name + '｣' + index, entity.x, entity.y + 0.2);
                     ctx.restore();
                 });
             }
@@ -343,7 +361,7 @@ $(function () {
         ctx.save();
         ctx.filter = 'greyscale(100%)';
         ctx.scale(facing, 1);
-        ctx.drawImage(sprite, facing * (x * blockSize) - ((blockSize * width) / 2) - blockSize * 0.07, canvas.height - y * blockSize, blockSize * height, blockSize * height);
+        ctx.drawImage(sprite, facing * (x * blockSize) - ((blockSize * width) / 2) - blockSize * 0.07, canvas.height - y * blockSize, blockSize * width, blockSize * height);
         ctx.restore();
     }
 
@@ -370,7 +388,12 @@ $(function () {
             var currentFriction = entity.airFriction;
             if (entity.onGround === true) {
                 currentFriction = entity.friction;
-                currentAccel = entity.accelx;
+                if (entity.controls.sprint in keysDown) {
+                    currentAccel = entity.accelx;
+                } else {
+                    currentAccel = entity.slowAccelx;
+
+                }
             }
             if (entity.controls.sprint in keysDown === true) {
                 currentMaxSpeed = entity.runSpeed;
@@ -510,7 +533,7 @@ $(function () {
                 'y': [entity.y, entity.y + entity.height]
             };
 
-            function yCollision() {
+            function yCollision(testingBlock) {
                 if (entity.vely > 0) {
                     newLocation.y = testingBlock.bounds.y[0] - entity.height;
                 } else if (entity.vely < 0) {
@@ -520,7 +543,7 @@ $(function () {
                 entity.vely = 0;
             }
 
-            function xCollision() {
+            function xCollision(testingBlock) {
                 if (entity.velx > 0) {
                     newLocation.x = testingBlock.bounds.x[0] - entity.width / 2;
                 } else if (entity.velx < 0) {
@@ -528,26 +551,47 @@ $(function () {
                 }
                 entity.velx = 0;
             }
+
+            function detectCollision(testingBlock) {
+                var wasInsideBlock = insideBlock(oldCharBounds, testingBlock.bounds);
+                var willBeInsideBlock = insideBlock(charBounds, testingBlock.bounds);
+                if (willBeInsideBlock.x === true && willBeInsideBlock.y === true) {
+                    if (testingBlock.collision !== false) {
+                        if (wasInsideBlock.x === true && wasInsideBlock.y === false) {
+                            yCollision(testingBlock);
+                        } else if (wasInsideBlock.y === true && wasInsideBlock.x === false) {
+                            xCollision(testingBlock);
+                        } else if (wasInsideBlock.x === true && wasInsideBlock.y === true) {
+                            entity.vely = -0.001;
+                            yCollision(testingBlock);
+                        }
+                    }
+                }
+            }
             entity.onGround = false;
             for (let i = 0; i < 2; i++) {
                 for (let i2 = 0; i2 < 3; i2++) {
-                    var testingBlock = getBlock(truncatedLocation.x - 1 + i2, truncatedLocation.y + i);
-                    var wasInsideBlock = insideBlock(oldCharBounds, testingBlock.bounds);
-                    var willBeInsideBlock = insideBlock(charBounds, testingBlock.bounds);
-                    if (willBeInsideBlock.x === true && willBeInsideBlock.y === true) {
-                        if (testingBlock.collision !== false) {
-                            if (wasInsideBlock.x === true && wasInsideBlock.y === false) {
-                                yCollision();
-                            } else if (wasInsideBlock.y === true && wasInsideBlock.x === false) {
-                                xCollision();
-                            } else if (wasInsideBlock.x === true && wasInsideBlock.y === true) {
-                                entity.vely = -0.001
-                                yCollision();
-                            }
-                        }
-                    }
+                    detectCollision(getBlock(truncatedLocation.x - 1 + i2, truncatedLocation.y + i));
                 } //todo implement steps. this still isnt a perfect solution.
             }
+            $.each(controllableEntities, function (index, testingEntity) {
+                var testingCharBounds = {
+                    'bounds': {
+                        'x': [testingEntity.x - testingEntity.width / 2, testingEntity.x + testingEntity.width / 2],
+                        'y': [testingEntity.y, testingEntity.y + testingEntity.height]
+                    }
+                };
+                detectCollision(testingCharBounds);
+            });
+            $.each(socketEntities, function (index, testingEntity) {
+                var testingCharBounds = {
+                    'bounds': {
+                        'x': [testingEntity.x - testingEntity.width / 2, testingEntity.x + testingEntity.width / 2],
+                        'y': [testingEntity.y, testingEntity.y + testingEntity.height]
+                    }
+                };
+                detectCollision(testingCharBounds);
+            });
             entity.y = newLocation.y;
             entity.x = newLocation.x;
         });
@@ -557,7 +601,6 @@ $(function () {
         x = Math.trunc(x);
         y = Math.trunc(y);
         var blockId = reverseBlockData['air'];
-        var blockName = 'air';
         var block = {
             'name': 'air',
             'collision': false
@@ -568,7 +611,6 @@ $(function () {
         };
         if (stage[x] && stage[x][y] !== undefined) {
             blockId = stage[x][y];
-            blockName = reverseBlockData[stage[x][y]];
             block.name = reverseBlockData[stage[x][y]];
         }
         if (blockData[reverseBlockData[blockId]]) {
@@ -634,7 +676,7 @@ $(function () {
             $.each(column, function (index2, val2) { //TODO make a dynamic system for blocks that can be easily
                 switch (val2) {
                     case blockData.black.id: //black block
-                        ctx.fillStyle = "#000";
+                        ctx.fillStyle = "#0f0f0f";
                         ctx.fillRect(index1 * blockSize, canvas.height - ((index2) * blockSize), blockSize, blockSize);
                         break;
                     case blockData.basic.id: //basic block
@@ -670,6 +712,7 @@ $(function () {
     function render() {
         ctx.save();
         ctx.translate(controllableEntities[cameraFollowing].camerax * blockSize, controllableEntities[cameraFollowing].cameray * blockSize);
+        drawSprite((canvas.width / blockSize) / 2 - controllableEntities[cameraFollowing].camerax * blockSize * 0.01, 50, 1, background, 240, 100);
         drawStage();
         updateSprite();
         drawEntities();
