@@ -30,6 +30,10 @@ $(function () {
     }
     var menuMode = menus.none;
 
+    function getRandomInt(max) {
+        return Math.floor(Math.random() * Math.floor(max));
+    }
+
     function resizeCanvas() {
         canvasResize = false;
         canvas.height = window.innerHeight;
@@ -165,7 +169,7 @@ $(function () {
         scrollMultiplier = 5,
         state = playerStates.onGround,
         greyscale = 0,
-        hueRotate = 0,
+        hueRotate = getRandomInt(360),
         slowAccelx = 0.02,
         controls = {
             left: 65,
@@ -327,6 +331,7 @@ $(function () {
             if (entity.nameWidth === undefined) {
                 entity.nameWidth = ctx.measureText('｢' + userName + '｣' + index).width;
             }
+            ctx.filter = 'hue-rotate(' + entity.hueRotate + 'deg)';
             drawSprite(entity.x, entity.y, entity.facing, entity.currentSprite, entity.displayWidth, entity.displayHeight);
             ctx.fillStyle = '#000000';
             ctx.globalAlpha = 0.5;
@@ -342,6 +347,7 @@ $(function () {
                 $.each(clientGroup.data, function (indexTwo, entity) {
                     ctx.save();
                     ctx.font = blockSize / 2 + 'px consolas';
+                    ctx.filter = 'hue-rotate(' + entity.hueRotate + 'deg)';
                     drawSprite(entity.x, entity.y, entity.facing, sprites.idle, entity.displayWidth, entity.displayHeight);
                     ctx.globalAlpha = 0.5;
                     ctx.fillStyle = '#000000';
