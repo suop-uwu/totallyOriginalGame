@@ -1,4 +1,8 @@
 $(function () {
+    var builder;
+    $.getScript('scripts/builder.js', function () {
+        builder = builderLoop;
+    });
     var canvas = $('#mainCanvas')[0];
     var ctx = canvas.getContext('2d');
     var blockSize;
@@ -764,6 +768,11 @@ $(function () {
                 window.requestAnimationFrame(mainGameLoop);
                 break;
             case modes.builder:
+                if (builder !== undefined) {
+                    builder();
+                }
+
+                window.requestAnimationFrame(mainGameLoop);
                 break;
             case modes.menu:
                 canvas.height = 0;
@@ -779,6 +788,10 @@ $(function () {
                     if (e.keyCode == 13) {
                         $(this).trigger("enterKey");
                     }
+                });
+                $('#builder').click(function () {
+                    mode = modes.builder;
+                    mainGameLoop();
                 });
                 socket.on('nameRequest', function (answer) {
                     if (answer === true) {
