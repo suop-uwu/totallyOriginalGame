@@ -722,7 +722,7 @@ $(function () {
     function render() {
         ctx.save();
         ctx.translate(controllableEntities[cameraFollowing].camerax * blockSize, controllableEntities[cameraFollowing].cameray * blockSize);
-        drawSprite((canvas.width / blockSize) / 2 - controllableEntities[cameraFollowing].camerax * blockSize * 0.01, 50, 1, background, 240, 100);
+        drawSprite((canvas.width / blockSize) / 2 - controllableEntities[cameraFollowing].camerax * blockSize * 0.01, 50 + controllableEntities[cameraFollowing].cameray * blockSize * 0.01, 1, background, 240, 100);
         drawStage();
         updateSprite();
         drawEntities();
