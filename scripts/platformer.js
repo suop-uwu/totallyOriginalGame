@@ -588,7 +588,6 @@ $(function () {
 
     function updatePos(frameModifier) {
         $.each(controllableEntities, function (index, entity) {
-            console.log(frameModifier)
             var newLocation = {
                 x: entity.x + entity.velx * frameModifier, //accounts for variations in framerate
                 y:
